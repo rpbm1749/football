@@ -32,11 +32,49 @@ export function GameStateEditorUI() {
     gameStateStore.getIsDirty.bind(gameStateStore)
   );
 
+  const currentSequence = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getCurrentSequence.bind(gameStateStore)
+  );
 
+  const selectedBoardIndex = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getSelectedBoardIndex.bind(gameStateStore)
+  );
 
   const isLoading = useSyncExternalStore(
     gameStateStore.subscribe.bind(gameStateStore),
     gameStateStore.getIsLoading.bind(gameStateStore)
+  );
+
+  const showZoneOfInfluence = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowZoneOfInfluence.bind(gameStateStore)
+  );
+
+  const showVulnerability = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowVulnerability.bind(gameStateStore)
+  );
+
+  const showPassingOptions = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowPassingOptions.bind(gameStateStore)
+  );
+
+  const showOpponentPassingOptions = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowOpponentPassingOptions.bind(gameStateStore)
+  );
+
+  const showAvailableRuns = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowAvailableRuns.bind(gameStateStore)
+  );
+
+  const showOpponentRuns = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowOpponentRuns.bind(gameStateStore)
   );
 
   // Tab State
@@ -278,6 +316,444 @@ export function GameStateEditorUI() {
                 </div>
               </div>
 
+              <div style={styles.divider} />
+
+              {/* Scenario Sequence */}
+              <div style={styles.section}>
+                <h3 style={styles.sectionHeader}>Scenario Sequence</h3>
+                <button
+                  onClick={() => {
+                    const name = prompt("Enter sequence name:", "New Sequence");
+                    if (name) gameStateStore.newSequence(name);
+                  }}
+                  style={styles.primaryButton}
+                >
+                  ➕ New Sequence
+                </button>
+
+                {currentSequence && (
+                  <>
+                    <div style={styles.sequenceNameContainer}>
+                      <span style={styles.sequenceNameLabel}>Current Sequence</span>
+                      <span
+                        onClick={() => {
+                          const newName = prompt("Rename sequence to:", currentSequence.name);
+                          if (newName) gameStateStore.renameSequence(newName);
+                        }}
+                        style={styles.sequenceNameValue}
+                        title="Click to rename sequence"
+                      >
+                        {currentSequence.name} ✏️
+                      </span>
+                    </div>
+
+                    <div style={styles.sequenceList}>
+                      {currentSequence.boards.map((board, idx) => {
+                        const isActive = selectedBoardIndex === idx;
+                        const displayName = board.name || `State ${idx + 1}`;
+                        return (
+                          <div
+                            key={idx}
+                            style={{
+                              ...styles.sequenceItem,
+                              ...(isActive ? styles.sequenceItemActive : {}),
+                            }}
+                          >
+                            <span
+                              onClick={() => gameStateStore.selectSequenceBoard(idx)}
+                              style={styles.sequenceItemName}
+                              title="Click to load this board state"
+                            >
+                              {displayName}
+                            </span>
+                            <div style={styles.sequenceItemActions}>
+                              <button
+                                onClick={() => {
+                                  const newName = prompt("Rename state to:", displayName);
+                                  if (newName) gameStateStore.renameSequenceBoard(idx, newName);
+                                }}
+                                style={styles.smallIconButton}
+                                title="Rename State"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => gameStateStore.moveSequenceBoard(idx, "up")}
+                                disabled={idx === 0}
+                                style={{
+                                  ...styles.smallIconButton,
+                                  opacity: idx === 0 ? 0.3 : 1,
+                                }}
+                                title="Move Up"
+                              >
+                                ▲
+                              </button>
+                              <button
+                                onClick={() => gameStateStore.moveSequenceBoard(idx, "down")}
+                                disabled={idx === currentSequence.boards.length - 1}
+                                style={{
+                                  ...styles.smallIconButton,
+                                  opacity: idx === currentSequence.boards.length - 1 ? 0.3 : 1,
+                                }}
+                                title="Move Down"
+                              >
+                                ▼
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ ...styles.buttonGrid, marginTop: "12px" }}>
+                      <button
+                        onClick={() => gameStateStore.addCurrentBoardToSequence()}
+                        style={styles.secondaryButton}
+                      >
+                        ➕ Add Current Board
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (selectedBoardIndex !== null) {
+                            gameStateStore.duplicateSequenceBoard(selectedBoardIndex);
+                          }
+                        }}
+                        disabled={selectedBoardIndex === null}
+                        style={{
+                          ...styles.secondaryButton,
+                          opacity: selectedBoardIndex === null ? 0.5 : 1,
+                        }}
+                      >
+                        Duplicate Selected
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (selectedBoardIndex !== null && confirm("Delete selected state from sequence?")) {
+                            gameStateStore.deleteSequenceBoard(selectedBoardIndex);
+                          }
+                        }}
+                        disabled={selectedBoardIndex === null}
+                        style={{
+                          ...styles.dangerButton,
+                          gridColumn: "span 2",
+                          opacity: selectedBoardIndex === null ? 0.5 : 1,
+                        }}
+                      >
+                        Delete Selected
+                      </button>
+                    </div>
+
+                    <div style={styles.sequenceNavRow}>
+                      <button
+                        onClick={() => {
+                          if (selectedBoardIndex !== null && selectedBoardIndex > 0) {
+                            gameStateStore.selectSequenceBoard(selectedBoardIndex - 1);
+                          }
+                        }}
+                        disabled={selectedBoardIndex === null || selectedBoardIndex === 0}
+                        style={{
+                          ...styles.navArrowButton,
+                          opacity: (selectedBoardIndex === null || selectedBoardIndex === 0) ? 0.4 : 1,
+                        }}
+                      >
+                        ◀ Prev
+                      </button>
+                      <span style={styles.navProgressText}>
+                        {selectedBoardIndex !== null
+                          ? `${selectedBoardIndex + 1} / ${currentSequence.boards.length}`
+                          : "0 / 0"}
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (
+                            selectedBoardIndex !== null &&
+                            selectedBoardIndex < currentSequence.boards.length - 1
+                          ) {
+                            gameStateStore.selectSequenceBoard(selectedBoardIndex + 1);
+                          }
+                        }}
+                        disabled={
+                          selectedBoardIndex === null ||
+                          selectedBoardIndex === currentSequence.boards.length - 1
+                        }
+                        style={{
+                          ...styles.navArrowButton,
+                          opacity:
+                            selectedBoardIndex === null ||
+                            selectedBoardIndex === currentSequence.boards.length - 1
+                              ? 0.4
+                              : 1,
+                        }}
+                      >
+                        Next ▶
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {!editMode && (
+                <>
+                  <div style={styles.divider} />
+                  <div style={styles.section}>
+                    <h3 style={styles.sectionHeader}>Analysis</h3>
+                    <button
+                      onClick={() => gameStateStore.toggleZoneOfInfluence()}
+                      style={{
+                        ...styles.secondaryButton,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-start",
+                        gap: "8px",
+                        background: showZoneOfInfluence
+                          ? "rgba(0, 255, 136, 0.15)"
+                          : "rgba(255, 255, 255, 0.05)",
+                        border: showZoneOfInfluence
+                          ? "1px solid rgba(0, 255, 136, 0.4)"
+                          : "1px solid rgba(255, 255, 255, 0.1)",
+                        color: showZoneOfInfluence ? "#00ff88" : "#ccc",
+                        padding: "10px 14px",
+                        width: "100%",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        textAlign: "left",
+                        cursor: "pointer",
+                        borderRadius: "8px",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      <span style={{ fontSize: "14px", fontWeight: "bold" }}>
+                        {showZoneOfInfluence ? "✓" : "○"}
+                      </span>
+                      <span>Zone of Influence</span>
+                    </button>
+
+                    {(() => {
+                      const possessor = state.players.find(p => p.id === state.ball.playerIdWhoHasPossession);
+                      const isTeamAAttacking = possessor?.team === "A";
+                      const isTeamBAttacking = possessor?.team === "B";
+                      return (
+                        <>
+                          <button
+                            onClick={() => {
+                              if (isTeamBAttacking) {
+                                gameStateStore.toggleVulnerability();
+                              }
+                            }}
+                            disabled={!isTeamBAttacking}
+                            style={{
+                              ...styles.secondaryButton,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "8px",
+                              background: showVulnerability && isTeamBAttacking
+                                ? "rgba(231, 76, 60, 0.15)"
+                                : "rgba(255, 255, 255, 0.05)",
+                              border: showVulnerability && isTeamBAttacking
+                                ? "1px solid rgba(231, 76, 60, 0.4)"
+                                : "1px solid rgba(255, 255, 255, 0.1)",
+                              color: !isTeamBAttacking
+                                ? "#666"
+                                : showVulnerability
+                                ? "#ff4d4d"
+                                : "#ccc",
+                              padding: "10px 14px",
+                              width: "100%",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              textAlign: "left",
+                              cursor: isTeamBAttacking ? "pointer" : "not-allowed",
+                              borderRadius: "8px",
+                              transition: "all 0.2s ease",
+                              marginTop: "8px",
+                              opacity: isTeamBAttacking ? 1 : 0.4,
+                            }}
+                            title={!isTeamBAttacking ? "Only active when Team B (Opponent) has possession" : "Toggle Vulnerability Analysis"}
+                          >
+                            <span style={{ fontSize: "14px", fontWeight: "bold" }}>
+                              {showVulnerability && isTeamBAttacking ? "✓" : "○"}
+                            </span>
+                            <span>Vulnerability Analysis {!isTeamBAttacking && "🔒"}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (isTeamAAttacking) {
+                                gameStateStore.togglePassingOptions();
+                              }
+                            }}
+                            disabled={!isTeamAAttacking}
+                            style={{
+                              ...styles.secondaryButton,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "8px",
+                              background: showPassingOptions && isTeamAAttacking
+                                ? "rgba(0, 255, 136, 0.15)"
+                                : "rgba(255, 255, 255, 0.05)",
+                              border: showPassingOptions && isTeamAAttacking
+                                ? "1px solid rgba(0, 255, 136, 0.4)"
+                                : "1px solid rgba(255, 255, 255, 0.1)",
+                              color: !isTeamAAttacking
+                                ? "#666"
+                                : showPassingOptions
+                                ? "#00ff88"
+                                : "#ccc",
+                              padding: "10px 14px",
+                              width: "100%",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              textAlign: "left",
+                              cursor: isTeamAAttacking ? "pointer" : "not-allowed",
+                              borderRadius: "8px",
+                              transition: "all 0.2s ease",
+                              marginTop: "8px",
+                              opacity: isTeamAAttacking ? 1 : 0.4,
+                            }}
+                            title={!isTeamAAttacking ? "Only active when Team A has possession" : "Toggle Teammate Passing Options"}
+                          >
+                            <span style={{ fontSize: "14px", fontWeight: "bold" }}>
+                              {showPassingOptions && isTeamAAttacking ? "✓" : "○"}
+                            </span>
+                            <span>Passing Options {!isTeamAAttacking && "🔒"}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (isTeamBAttacking) {
+                                gameStateStore.toggleOpponentPassingOptions();
+                              }
+                            }}
+                            disabled={!isTeamBAttacking}
+                            style={{
+                              ...styles.secondaryButton,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "8px",
+                              background: showOpponentPassingOptions && isTeamBAttacking
+                                ? "rgba(231, 76, 60, 0.15)"
+                                : "rgba(255, 255, 255, 0.05)",
+                              border: showOpponentPassingOptions && isTeamBAttacking
+                                ? "1px solid rgba(231, 76, 60, 0.4)"
+                                : "1px solid rgba(255, 255, 255, 0.1)",
+                              color: !isTeamBAttacking
+                                ? "#666"
+                                : showOpponentPassingOptions
+                                ? "#ff4d4d"
+                                : "#ccc",
+                              padding: "10px 14px",
+                              width: "100%",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              textAlign: "left",
+                              cursor: isTeamBAttacking ? "pointer" : "not-allowed",
+                              borderRadius: "8px",
+                              transition: "all 0.2s ease",
+                              marginTop: "8px",
+                              opacity: isTeamBAttacking ? 1 : 0.4,
+                            }}
+                            title={!isTeamBAttacking ? "Only active when Team B (Opponent) has possession" : "Toggle Opponent Passing Options"}
+                          >
+                            <span style={{ fontSize: "14px", fontWeight: "bold" }}>
+                              {showOpponentPassingOptions && isTeamBAttacking ? "✓" : "○"}
+                            </span>
+                            <span>Opponent Passing Options {!isTeamBAttacking && "🔒"}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (isTeamAAttacking) {
+                                gameStateStore.toggleAvailableRuns();
+                              }
+                            }}
+                            disabled={!isTeamAAttacking}
+                            style={{
+                              ...styles.secondaryButton,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "8px",
+                              background: showAvailableRuns && isTeamAAttacking
+                                ? "rgba(0, 255, 136, 0.15)"
+                                : "rgba(255, 255, 255, 0.05)",
+                              border: showAvailableRuns && isTeamAAttacking
+                                ? "1px solid rgba(0, 255, 136, 0.4)"
+                                : "1px solid rgba(255, 255, 255, 0.1)",
+                              color: !isTeamAAttacking
+                                ? "#666"
+                                : showAvailableRuns
+                                ? "#00ff88"
+                                : "#ccc",
+                              padding: "10px 14px",
+                              width: "100%",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              textAlign: "left",
+                              cursor: isTeamAAttacking ? "pointer" : "not-allowed",
+                              borderRadius: "8px",
+                              transition: "all 0.2s ease",
+                              marginTop: "8px",
+                              opacity: isTeamAAttacking ? 1 : 0.4,
+                            }}
+                            title={!isTeamAAttacking ? "Only active when Team A has possession" : "Toggle Available Runs"}
+                          >
+                            <span style={{ fontSize: "14px", fontWeight: "bold" }}>
+                              {showAvailableRuns && isTeamAAttacking ? "✓" : "○"}
+                            </span>
+                            <span>Available Runs {!isTeamAAttacking && "🔒"}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (isTeamBAttacking) {
+                                gameStateStore.toggleOpponentRuns();
+                              }
+                            }}
+                            disabled={!isTeamBAttacking}
+                            style={{
+                              ...styles.secondaryButton,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "8px",
+                              background: showOpponentRuns && isTeamBAttacking
+                                ? "rgba(231, 76, 60, 0.15)"
+                                : "rgba(255, 255, 255, 0.05)",
+                              border: showOpponentRuns && isTeamBAttacking
+                                ? "1px solid rgba(231, 76, 60, 0.4)"
+                                : "1px solid rgba(255, 255, 255, 0.1)",
+                              color: !isTeamBAttacking
+                                ? "#666"
+                                : showOpponentRuns
+                                ? "#ff4d4d"
+                                : "#ccc",
+                              padding: "10px 14px",
+                              width: "100%",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              textAlign: "left",
+                              cursor: isTeamBAttacking ? "pointer" : "not-allowed",
+                              borderRadius: "8px",
+                              transition: "all 0.2s ease",
+                              marginTop: "8px",
+                              opacity: isTeamBAttacking ? 1 : 0.4,
+                            }}
+                            title={!isTeamBAttacking ? "Only active when Team B (Opponent) has possession" : "Toggle Opponent Runs"}
+                          >
+                            <span style={{ fontSize: "14px", fontWeight: "bold" }}>
+                              {showOpponentRuns && isTeamBAttacking ? "✓" : "○"}
+                            </span>
+                            <span>Opponent Runs {!isTeamBAttacking && "🔒"}</span>
+                          </button>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </>
+              )}
 
             </>
           ) : (
@@ -1089,5 +1565,99 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     fontSize: "12px",
     fontWeight: 700,
+  },
+  sequenceNameContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    margin: "10px 0",
+    background: "rgba(255, 255, 255, 0.03)",
+    padding: "8px",
+    borderRadius: "6px",
+    border: "1px solid rgba(255, 255, 255, 0.05)",
+  },
+  sequenceNameLabel: {
+    fontSize: "10px",
+    textTransform: "uppercase",
+    color: "#a0aec0",
+    letterSpacing: "0.5px",
+  },
+  sequenceNameValue: {
+    fontSize: "13px",
+    fontWeight: 700,
+    color: "#00ff88",
+    cursor: "pointer",
+    textDecoration: "underline dashed rgba(0, 255, 136, 0.5)",
+  },
+  sequenceList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    maxHeight: "200px",
+    overflowY: "auto",
+    paddingRight: "4px",
+    margin: "10px 0",
+  },
+  sequenceItem: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "6px 10px",
+    background: "rgba(255, 255, 255, 0.02)",
+    border: "1px solid rgba(255, 255, 255, 0.05)",
+    borderRadius: "8px",
+    gap: "8px",
+  },
+  sequenceItemActive: {
+    background: "rgba(0, 255, 136, 0.08)",
+    border: "1px solid rgba(0, 255, 136, 0.3)",
+  },
+  sequenceItemName: {
+    fontSize: "12px",
+    fontWeight: 600,
+    color: "#e2e8f0",
+    cursor: "pointer",
+    flex: 1,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  sequenceItemActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+  },
+  smallIconButton: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "10px",
+    padding: "2px",
+    color: "#ccc",
+  },
+  sequenceNavRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "10px",
+    marginTop: "12px",
+    background: "rgba(0, 0, 0, 0.2)",
+    padding: "6px",
+    borderRadius: "8px",
+  },
+  navArrowButton: {
+    background: "rgba(255, 255, 255, 0.08)",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+    borderRadius: "6px",
+    color: "#fff",
+    fontSize: "11px",
+    fontWeight: 700,
+    padding: "6px 12px",
+    cursor: "pointer",
+  },
+  navProgressText: {
+    fontSize: "11px",
+    fontWeight: 600,
+    color: "#a0aec0",
   },
 };

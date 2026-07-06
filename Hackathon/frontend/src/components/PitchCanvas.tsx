@@ -22,6 +22,36 @@ export function PitchCanvas() {
     gameStateStore.getSelectedPlayerId.bind(gameStateStore)
   );
 
+  const showZoneOfInfluence = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowZoneOfInfluence.bind(gameStateStore)
+  );
+
+  const showVulnerability = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowVulnerability.bind(gameStateStore)
+  );
+
+  const showPassingOptions = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowPassingOptions.bind(gameStateStore)
+  );
+
+  const showOpponentPassingOptions = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowOpponentPassingOptions.bind(gameStateStore)
+  );
+
+  const showAvailableRuns = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowAvailableRuns.bind(gameStateStore)
+  );
+
+  const showOpponentRuns = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowOpponentRuns.bind(gameStateStore)
+  );
+
   // Track dragging / rotating states locally
   const interactionRef = useRef<{
     isDragging: boolean;
@@ -115,6 +145,448 @@ export function PitchCanvas() {
         toScreenLength(stripeW),
         toScreenLength(60)
       );
+    }
+
+    // 1.5. Draw Zone of Influence Overlay (if active in View Mode)
+    if (!editMode && showZoneOfInfluence) {
+      const result = gameStateStore.getZoneInfluenceResult();
+      const cols = result.cells.length;
+      const rows = result.cells[0].length;
+      const cellW = 100 / cols;
+      const cellH = 60 / rows;
+
+      for (let c = 0; c < cols; c++) {
+        const xStart = toScreenX(c * cellW);
+        const xWidth = toScreenX((c + 1) * cellW) - xStart;
+        for (let r = 0; r < rows; r++) {
+          const cell = result.cells[c][r];
+          const yStart = toScreenY((r + 1) * cellH);
+          const yHeight = toScreenY(r * cellH) - yStart;
+
+          // Compute absolute difference in arrival times
+          const arrivalA = cell.arrivalTimeA;
+          const arrivalB = cell.arrivalTimeB;
+          let diff = 0;
+          if (arrivalA !== Infinity && arrivalB !== Infinity) {
+            diff = Math.abs(arrivalA - arrivalB);
+          } else if (arrivalA === Infinity && arrivalB === Infinity) {
+            diff = 0;
+          } else {
+            diff = 3.0;
+          }
+
+          if (cell.isContested) {
+            // Smoothly transition between Dark Purple (rgba(100, 10, 150, 0.42)) at diff = 0.0
+            // and Light Purple (rgba(200, 120, 240, 0.42)) at diff = 0.25
+            const t = Math.min(1.0, Math.max(0.0, diff / 0.25));
+            const rComp = Math.round(100 + t * 100);
+            const gComp = Math.round(10 + t * 110);
+            const bComp = Math.round(150 + t * 90);
+            ctx.fillStyle = `rgba(${rComp}, ${gComp}, ${bComp}, 0.42)`;
+          } else {
+            if (cell.controllingTeam === "A") {
+              ctx.fillStyle = "rgba(65, 105, 225, 0.7)"; // Team A Blue
+            } else if (cell.controllingTeam === "B") {
+              ctx.fillStyle = "rgba(211, 211, 211, 0.6)"; // Team B White
+            } else {
+              continue;
+            }
+          }
+
+          ctx.fillRect(xStart, yStart, xWidth, yHeight);
+        }
+      }
+    }
+
+    // 1.6. Draw Vulnerability Analysis Overlay (if active in View Mode and opponent has possession)
+    const possessor = state.players.find(p => p.id === state.ball.playerIdWhoHasPossession);
+    const isTeamBAttacking = possessor?.team === "B";
+    if (!editMode && showVulnerability && isTeamBAttacking) {
+      const result = gameStateStore.getExploitabilityResult();
+      const cols = result.cells.length;
+      const rows = result.cells[0].length;
+      const cellW = 100 / cols;
+      const cellH = 60 / rows;
+      const bx = state.ball.x;
+      const by = state.ball.y;
+
+      // Copy states for processing
+      const cellStates: string[][] = [];
+      for (let c = 0; c < cols; c++) {
+        cellStates[c] = [];
+        for (let r = 0; r < rows; r++) {
+          cellStates[c][r] = result.cells[c][r].state;
+        }
+      }
+
+      // Step 1: Connected-Component Analysis (CCA) for noise reduction
+      const visited = Array.from({ length: cols }, () => new Uint8Array(rows));
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          if (cellStates[c][r] === "Exploitable" && !visited[c][r]) {
+            const component: [number, number][] = [];
+            const queue: [number, number][] = [[c, r]];
+            visited[c][r] = 1;
+
+            while (queue.length > 0) {
+              const curr = queue.shift()!;
+              component.push(curr);
+              const [cc, cr] = curr;
+
+              // Check 8-neighbors
+              for (let dc = -1; dc <= 1; dc++) {
+                for (let dr = -1; dr <= 1; dr++) {
+                  if (dc === 0 && dr === 0) continue;
+                  const nc = cc + dc;
+                  const nr = cr + dr;
+                  if (nc >= 0 && nc < cols && nr >= 0 && nr < rows) {
+                    if (cellStates[nc][nr] === "Exploitable" && !visited[nc][nr]) {
+                      visited[nc][nr] = 1;
+                      queue.push([nc, nr]);
+                    }
+                  }
+                }
+              }
+            }
+
+            // If component is smaller than MIN_EXPLOITABLE_REGION_SIZE (6), filter it to Useless
+            if (component.length < 6) {
+              component.forEach(([cc, cr]) => {
+                cellStates[cc][cr] = "Useless";
+              });
+            }
+          }
+        }
+      }
+
+      // Step 2: Ray-tracing forward along ball trajectory for Useless cells
+      const tracedStates = cellStates.map((col) => [...col]);
+      for (let c = 0; c < cols; c++) {
+        const cx = (c + 0.5) * cellW;
+        for (let r = 0; r < rows; r++) {
+          if (cellStates[c][r] === "Useless") {
+            const cellInfo = result.cells[c][r];
+            // If the defender can reach this cell before or at the same time as the attacker,
+            // then the pass is intercepted/recovered by the defender first. It is Defended!
+            if (cellInfo.defenderArrival <= cellInfo.attackerArrival) {
+              tracedStates[c][r] = "Defended";
+              continue;
+            }
+
+            const cy = (r + 0.5) * cellH;
+            const vx = cx - bx;
+            const vy = cy - by;
+            const dist = Math.hypot(vx, vy);
+            if (dist < 0.05) continue;
+
+            const dx = vx / dist;
+            const dy = vy / dist;
+
+            let inherited = "Useless";
+            // Trace forward along trajectory (away from the ball)
+            for (let s = 1; s <= 120; s++) {
+              const tx = cx + s * 1.0 * dx;
+              const ty = cy + s * 1.0 * dy;
+
+              if (tx < 0 || tx > 100 || ty < 0 || ty > 60) {
+                break;
+              }
+
+              const tc = Math.floor(tx / cellW);
+              const tr = Math.floor(ty / cellH);
+              if (tc >= 0 && tc < cols && tr >= 0 && tr < rows) {
+                const tState = cellStates[tc][tr];
+                if (tState !== "Useless") {
+                  inherited = tState;
+                  break;
+                }
+              }
+            }
+            tracedStates[c][r] = inherited;
+          }
+        }
+      }
+
+      // Step 3: Pruning via spatial rules & Draw cells
+      for (let c = 0; c < cols; c++) {
+        const cx = (c + 0.5) * cellW;
+        const xStart = toScreenX(c * cellW);
+        const xWidth = toScreenX((c + 1) * cellW) - xStart;
+
+        // Spatial Rules:
+        // Rule 1: ball in B's half (bx >= 50.0) -> render only in A's half (cx < 50.0)
+        // Rule 2: ball in A's half (33.33 <= bx < 50.0) -> render ahead of ball (cx < bx)
+        // Rule 3: ball in A's final third (bx < 33.33) -> render final third (cx < 33.33)
+        let passSpatial = false;
+        if (bx >= 50.0) {
+          if (cx < 50.0) passSpatial = true;
+        } else if (bx >= 33.33 && bx < 50.0) {
+          if (cx < bx) passSpatial = true;
+        } else {
+          if (cx < 33.33) passSpatial = true;
+        }
+
+        if (!passSpatial) continue;
+
+        for (let r = 0; r < rows; r++) {
+          const finalState = tracedStates[c][r];
+          if (finalState === "Useless") continue;
+
+          const yStart = toScreenY((r + 1) * cellH);
+          const yHeight = toScreenY(r * cellH) - yStart;
+
+          if (finalState === "Defended") {
+            ctx.fillStyle = "rgba(46, 204, 113, 0.7)"; // Green
+          } else if (finalState === "Contested") {
+            ctx.fillStyle = "rgba(52, 152, 219, 0.7)"; // Blue
+          } else if (finalState === "Exploitable") {
+            ctx.fillStyle = "rgba(231, 76, 60, 0.7)"; // Strong Red
+          } else {
+            continue;
+          }
+
+          ctx.fillRect(xStart, yStart, xWidth, yHeight);
+        }
+      }
+    }
+
+    // 1.7. Draw Passing Analysis Overlay (if active in View Mode)
+    const possessorForPass = state.players.find(p => p.id === state.ball.playerIdWhoHasPossession);
+    const isTeamAAttackingForPass = possessorForPass?.team === "A";
+    const isTeamBAttackingForPass = possessorForPass?.team === "B";
+    const shouldRenderPassing = !editMode && (
+      (showPassingOptions && isTeamAAttackingForPass) ||
+      (showOpponentPassingOptions && isTeamBAttackingForPass)
+    );
+
+    if (shouldRenderPassing) {
+      const passResult = gameStateStore.getPassingAnalysisResult();
+      const cols = 80;
+      const rows = 48;
+      const cellW = 100 / cols;
+      const cellH = 60 / rows;
+
+      const ballScreenX = toScreenX(state.ball.x);
+      const ballScreenY = toScreenY(state.ball.y);
+
+      // Step A: Draw receiving region cell fills
+      passResult.options.forEach((opt) => {
+        const player = state.players.find(p => p.id === opt.playerId);
+
+        // Safe cells
+        opt.safeCells.forEach((c) => {
+          const cellX = (c.col + 0.5) * cellW;
+          const cellY = (c.row + 0.5) * cellH;
+          const dist = player ? Math.hypot(cellX - player.x, cellY - player.y) : 0;
+          let factor = 1.0;
+          const fadeStart = 8.0;
+          const fadeMax = 24.0;
+          if (dist > fadeStart) {
+            factor = Math.max(0.15, 1.0 - (dist - fadeStart) / (fadeMax - fadeStart));
+          }
+
+          ctx.fillStyle = isTeamAAttackingForPass 
+            ? `rgba(46, 204, 113, ${0.7 * factor})` 
+            : `rgba(231, 76, 60, ${0.7 * factor})`;
+
+          const xStart = toScreenX(c.col * cellW);
+          const xWidth = toScreenX((c.col + 1) * cellW) - xStart;
+          const yStart = toScreenY((c.row + 1) * cellH);
+          const yHeight = toScreenY(c.row * cellH) - yStart;
+          ctx.fillRect(xStart, yStart, xWidth, yHeight);
+        });
+
+        // Risky cells
+        opt.riskyCells.forEach((c) => {
+          const cellX = (c.col + 0.5) * cellW;
+          const cellY = (c.row + 0.5) * cellH;
+          const dist = player ? Math.hypot(cellX - player.x, cellY - player.y) : 0;
+          let factor = 1.0;
+          const fadeStart = 8.0;
+          const fadeMax = 24.0;
+          if (dist > fadeStart) {
+            factor = Math.max(0.15, 1.0 - (dist - fadeStart) / (fadeMax - fadeStart));
+          }
+
+          ctx.fillStyle = `rgba(241, 196, 15, ${0.7 * factor})`;
+
+          const xStart = toScreenX(c.col * cellW);
+          const xWidth = toScreenX((c.col + 1) * cellW) - xStart;
+          const yStart = toScreenY((c.row + 1) * cellH);
+          const yHeight = toScreenY(c.row * cellH) - yStart;
+          ctx.fillRect(xStart, yStart, xWidth, yHeight);
+        });
+      });
+
+      // Step B: Draw tactical passing arrows on top
+      passResult.options.forEach((opt) => {
+        const targetScreenX = toScreenX(opt.representativePoint.x);
+        const targetScreenY = toScreenY(opt.representativePoint.y);
+        const arrowColor = opt.hasSafe ? "#ffffff" : "#f1c40f";
+
+        // Skip drawing if the target is right at the ball
+        const distPx = Math.hypot(targetScreenX - ballScreenX, targetScreenY - ballScreenY);
+        if (distPx < 10) return;
+
+        if (opt.isAerial) {
+          // 3D Lofted Aerial Pass (curved Bezier curve arching upwards)
+          const midX = (ballScreenX + targetScreenX) / 2;
+          const midY = (ballScreenY + targetScreenY) / 2;
+          // Arch height scales with distance, capped at 90px
+          const archHeight = Math.min(90, distPx * 0.25);
+          const cpX = midX;
+          const cpY = midY - archHeight; // offset Y towards top of screen
+
+          // 1. Draw light ground trajectory shadow line
+          ctx.save();
+          ctx.strokeStyle = arrowColor;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+          ctx.globalAlpha = 0.4;
+          ctx.beginPath();
+          ctx.moveTo(ballScreenX, ballScreenY);
+          ctx.lineTo(targetScreenX, targetScreenY);
+          ctx.stroke();
+          ctx.restore();
+
+          // 2. Draw curved lofted pass curve with a drop shadow
+          ctx.save();
+          ctx.strokeStyle = arrowColor;
+          ctx.lineWidth = 2.8;
+          ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+          ctx.shadowBlur = 5;
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 6;
+          ctx.beginPath();
+          ctx.moveTo(ballScreenX, ballScreenY);
+          ctx.quadraticCurveTo(cpX, cpY, targetScreenX, targetScreenY);
+          ctx.stroke();
+
+          // Draw arrowhead pointing along curve tangent at end
+          const tangentAngle = Math.atan2(targetScreenY - cpY, targetScreenX - cpX);
+          ctx.fillStyle = arrowColor;
+          ctx.beginPath();
+          ctx.moveTo(targetScreenX, targetScreenY);
+          ctx.lineTo(
+            targetScreenX - 11 * Math.cos(tangentAngle - Math.PI / 6),
+            targetScreenY - 11 * Math.sin(tangentAngle - Math.PI / 6)
+          );
+          ctx.lineTo(
+            targetScreenX - 11 * Math.cos(tangentAngle + Math.PI / 6),
+            targetScreenY - 11 * Math.sin(tangentAngle + Math.PI / 6)
+          );
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        } else {
+          // Direct Ground Pass (straight solid arrow)
+          ctx.save();
+          ctx.strokeStyle = arrowColor;
+          ctx.lineWidth = 2.8;
+          ctx.fillStyle = arrowColor;
+          ctx.shadowColor = "rgba(0, 0, 0, 0.2)";
+          ctx.shadowBlur = 3;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 2;
+
+          ctx.beginPath();
+          ctx.moveTo(ballScreenX, ballScreenY);
+          ctx.lineTo(targetScreenX, targetScreenY);
+          ctx.stroke();
+
+          const angle = Math.atan2(targetScreenY - ballScreenY, targetScreenX - ballScreenX);
+          ctx.beginPath();
+          ctx.moveTo(targetScreenX, targetScreenY);
+          ctx.lineTo(
+            targetScreenX - 11 * Math.cos(angle - Math.PI / 6),
+            targetScreenY - 11 * Math.sin(angle - Math.PI / 6)
+          );
+          ctx.lineTo(
+            targetScreenX - 11 * Math.cos(angle + Math.PI / 6),
+            targetScreenY - 11 * Math.sin(angle + Math.PI / 6)
+          );
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+    }
+
+    // 1.8. Draw Running Channels Overlay (if active in View Mode)
+    const possessorForRuns = state.players.find(p => p.id === state.ball.playerIdWhoHasPossession);
+    const isTeamAAttackingForRuns = possessorForRuns?.team === "A";
+    const isTeamBAttackingForRuns = possessorForRuns?.team === "B";
+    const shouldRenderRuns = !editMode && (
+      (showAvailableRuns && isTeamAAttackingForRuns) ||
+      (showOpponentRuns && isTeamBAttackingForRuns)
+    );
+
+    if (shouldRenderRuns) {
+      const runResult = gameStateStore.getRunningChannelsResult();
+      const cols = 80;
+      const rows = 48;
+      const cellW = 100 / cols;
+      const cellH = 60 / rows;
+
+      // Step A: Draw running channel cell fills (Green for Team A, Red for Team B)
+      ctx.fillStyle = isTeamAAttackingForRuns ? "rgba(46, 204, 113, 0.7)" : "rgba(231, 76, 60, 0.7)";
+      runResult.channels.forEach((chan) => {
+        chan.cells.forEach((c) => {
+          const xStart = toScreenX(c.col * cellW);
+          const xWidth = toScreenX((c.col + 1) * cellW) - xStart;
+          const yStart = toScreenY((c.row + 1) * cellH);
+          const yHeight = toScreenY(c.row * cellH) - yStart;
+          ctx.fillRect(xStart, yStart, xWidth, yHeight);
+        });
+      });
+
+      // Step B: Draw dashed run arrows on top
+      runResult.channels.forEach((chan) => {
+        const player = state.players.find(p => p.id === chan.playerId);
+        if (!player) return;
+
+        const playerScreenX = toScreenX(player.x);
+        const playerScreenY = toScreenY(player.y);
+        const targetScreenX = toScreenX(chan.representativePoint.x);
+        const targetScreenY = toScreenY(chan.representativePoint.y);
+
+        const arrowColor = isTeamAAttackingForRuns ? "#ffffff" : "#ff4d4d"; // White vs Red
+
+        // Skip drawing if target is too close to the player
+        const distPx = Math.hypot(targetScreenX - playerScreenX, targetScreenY - playerScreenY);
+        if (distPx < 10) return;
+
+        ctx.save();
+        ctx.strokeStyle = arrowColor;
+        ctx.lineWidth = 2.8;
+        ctx.fillStyle = arrowColor;
+        ctx.setLineDash([6, 4]);
+        ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+        ctx.shadowBlur = 3;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 2;
+
+        ctx.beginPath();
+        ctx.moveTo(playerScreenX, playerScreenY);
+        ctx.lineTo(targetScreenX, targetScreenY);
+        ctx.stroke();
+
+        ctx.setLineDash([]); // reset for arrowhead
+        const angle = Math.atan2(targetScreenY - playerScreenY, targetScreenX - playerScreenX);
+        ctx.beginPath();
+        ctx.moveTo(targetScreenX, targetScreenY);
+        ctx.lineTo(
+          targetScreenX - 11 * Math.cos(angle - Math.PI / 6),
+          targetScreenY - 11 * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.lineTo(
+          targetScreenX - 11 * Math.cos(angle + Math.PI / 6),
+          targetScreenY - 11 * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      });
     }
 
     // 2. Draw Pitch markings (Thin white crisp lines)
@@ -433,7 +905,7 @@ export function PitchCanvas() {
     }
 
     ctx.restore();
-  }, [dimensions, state, editMode, selectedPlayerId]);
+  }, [dimensions, state, editMode, selectedPlayerId, showZoneOfInfluence, showVulnerability, showPassingOptions, showOpponentPassingOptions, showAvailableRuns, showOpponentRuns]);
 
   // Pointer event handlers mapping screen space -> logical pitch space
   const handlePointerDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
