@@ -77,12 +77,30 @@ export function GameStateEditorUI() {
     gameStateStore.getShowOpponentRuns.bind(gameStateStore)
   );
 
+  const showAttackingOverload = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowAttackingOverload.bind(gameStateStore)
+  );
+
+  const showDefensiveOverload = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowDefensiveOverload.bind(gameStateStore)
+  );
+
   // Tab State
   const [activeTab, setActiveTab] = useState<"editor" | "builder">("editor");
 
   // Save As modal/state
   const [saveAsName, setSaveAsName] = useState("");
   const [showSaveAs, setShowSaveAs] = useState(false);
+
+  // AI Tactical Analysis Modal States
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisPayload, setAnalysisPayload] = useState<any | null>(null);
+  const [analysisCache, setAnalysisCache] = useState<Record<string, string>>({});
 
   // Load scenarios on mount & inject spinner keyframes
   useEffect(() => {
@@ -99,6 +117,54 @@ export function GameStateEditorUI() {
       document.head.removeChild(styleEl);
     };
   }, []);
+
+  const handleTacticalAnalysis = async (mode: "current" | "sequence") => {
+    setShowAnalysisModal(true);
+    
+    try {
+      const payload = gameStateStore.getTacticalAnalysisPayload(mode);
+      setAnalysisPayload(payload);
+      const payloadStr = JSON.stringify(payload);
+
+      if (analysisCache[payloadStr]) {
+        // Cache hit: instantly display result
+        setAnalysisResult(analysisCache[payloadStr]);
+        setAnalysisLoading(false);
+        setAnalysisError(null);
+        return;
+      }
+
+      // Cache miss: proceed to fetch
+      setAnalysisLoading(true);
+      setAnalysisResult(null);
+      setAnalysisError(null);
+
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payloadStr
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setAnalysisResult(data.analysis);
+
+      // Save to cache
+      setAnalysisCache(prev => ({
+        ...prev,
+        [payloadStr]: data.analysis
+      }));
+    } catch (e: any) {
+      console.error("AI Analysis failed:", e);
+      setAnalysisError(e.message || "An unexpected error occurred while generating the report.");
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
 
   const selectedPlayer = state.players.find(p => p.id === selectedPlayerId) || null;
 
@@ -748,6 +814,152 @@ export function GameStateEditorUI() {
                             </span>
                             <span>Opponent Runs {!isTeamBAttacking && "🔒"}</span>
                           </button>
+
+                          <button
+                            onClick={() => {
+                              if (isTeamAAttacking) {
+                                gameStateStore.toggleAttackingOverload();
+                              }
+                            }}
+                            disabled={!isTeamAAttacking}
+                            style={{
+                              ...styles.secondaryButton,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "8px",
+                              background: showAttackingOverload && isTeamAAttacking
+                                ? "rgba(155, 89, 182, 0.15)"
+                                : "rgba(255, 255, 255, 0.05)",
+                              border: showAttackingOverload && isTeamAAttacking
+                                ? "1px solid rgba(155, 89, 182, 0.4)"
+                                : "1px solid rgba(255, 255, 255, 0.1)",
+                              color: !isTeamAAttacking
+                                ? "#666"
+                                : showAttackingOverload
+                                ? "#b784e8"
+                                : "#ccc",
+                              padding: "10px 14px",
+                              width: "100%",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              textAlign: "left",
+                              cursor: isTeamAAttacking ? "pointer" : "not-allowed",
+                              borderRadius: "8px",
+                              transition: "all 0.2s ease",
+                              marginTop: "8px",
+                              opacity: isTeamAAttacking ? 1 : 0.4,
+                            }}
+                            title={!isTeamAAttacking ? "Only active when Team A has possession" : "Toggle Attacking Overload"}
+                          >
+                            <span style={{ fontSize: "14px", fontWeight: "bold" }}>
+                              {showAttackingOverload && isTeamAAttacking ? "✓" : "○"}
+                            </span>
+                            <span>Attacking Overloads {!isTeamAAttacking && "🔒"}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (isTeamBAttacking) {
+                                gameStateStore.toggleDefensiveOverload();
+                              }
+                            }}
+                            disabled={!isTeamBAttacking}
+                            style={{
+                              ...styles.secondaryButton,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "8px",
+                              background: showDefensiveOverload && isTeamBAttacking
+                                ? "rgba(155, 89, 182, 0.15)"
+                                : "rgba(255, 255, 255, 0.05)",
+                              border: showDefensiveOverload && isTeamBAttacking
+                                ? "1px solid rgba(155, 89, 182, 0.4)"
+                                : "1px solid rgba(255, 255, 255, 0.1)",
+                              color: !isTeamBAttacking
+                                ? "#666"
+                                : showDefensiveOverload
+                                ? "#b784e8"
+                                : "#ccc",
+                              padding: "10px 14px",
+                              width: "100%",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              textAlign: "left",
+                              cursor: isTeamBAttacking ? "pointer" : "not-allowed",
+                              borderRadius: "8px",
+                              transition: "all 0.2s ease",
+                              marginTop: "8px",
+                              opacity: isTeamBAttacking ? 1 : 0.4,
+                            }}
+                            title={!isTeamBAttacking ? "Only active when Team B has possession" : "Toggle Defensive Overload"}
+                          >
+                            <span style={{ fontSize: "14px", fontWeight: "bold" }}>
+                              {showDefensiveOverload && isTeamBAttacking ? "✓" : "○"}
+                            </span>
+                            <span>Defensive Overloads {!isTeamBAttacking && "🔒"}</span>
+                          </button>
+
+                          <div style={{ marginTop: "20px", borderTop: "1px solid rgba(255, 255, 255, 0.1)", paddingTop: "16px" }}>
+                            <h4 style={{ margin: "0 0 10px", fontSize: "11px", textTransform: "uppercase", color: "#b784e8", fontWeight: 700, letterSpacing: "1px" }}>AI Tactical Assistant</h4>
+                            
+                            <button
+                              onClick={() => handleTacticalAnalysis("current")}
+                              disabled={editMode}
+                              style={{
+                                ...styles.secondaryButton,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "8px",
+                                background: "linear-gradient(135deg, #8e44ad, #9b59b6)",
+                                border: "none",
+                                color: "#fff",
+                                padding: "12px 14px",
+                                width: "100%",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                cursor: editMode ? "pointer" : "pointer",
+                                borderRadius: "8px",
+                                transition: "all 0.2s ease",
+                                boxShadow: "0 4px 15px rgba(142, 68, 173, 0.3)"
+                              }}
+                              title="Generate AI analysis for the current frame"
+                            >
+                              <span>✨</span>
+                              <span>Analyze Current Frame</span>
+                            </button>
+
+                            {currentSequence && currentSequence.boards.length > 0 && (
+                              <button
+                                onClick={() => handleTacticalAnalysis("sequence")}
+                                disabled={editMode}
+                                style={{
+                                  ...styles.secondaryButton,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "8px",
+                                  background: "rgba(142, 68, 173, 0.15)",
+                                  border: "1px solid rgba(142, 68, 173, 0.4)",
+                                  color: "#d896ff",
+                                  padding: "12px 14px",
+                                  width: "100%",
+                                  fontSize: "12px",
+                                  fontWeight: 700,
+                                  cursor: "pointer",
+                                  borderRadius: "8px",
+                                  transition: "all 0.2s ease",
+                                  marginTop: "8px"
+                                }}
+                                title="Generate AI analysis for the entire sequence"
+                              >
+                                <span>🎬</span>
+                                <span>Analyze Full Sequence ({currentSequence.boards.length} Boards)</span>
+                              </button>
+                            )}
+                          </div>
                         </>
                       );
                     })()}
@@ -1075,6 +1287,278 @@ export function GameStateEditorUI() {
                 Save
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* AI Tactical Analysis Modal */}
+      {showAnalysisModal && (
+        <div style={{
+          ...styles.modalBackdrop,
+          background: "rgba(0, 0, 0, 0.75)"
+        }}>
+          <div style={{
+            ...styles.modalContent,
+            width: "1020px",
+            maxWidth: "95vw",
+            maxHeight: "85vh",
+            overflowY: "auto",
+            background: "rgba(18, 28, 22, 0.98)",
+            padding: "28px"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255, 255, 255, 0.1)", paddingBottom: "14px", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "20px" }}>✨</span>
+                <h3 style={{ ...styles.modalTitle, fontSize: "18px", color: "#fff" }}>Team A AI Performance Report</h3>
+              </div>
+              <button
+                onClick={() => setShowAnalysisModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#aaa",
+                  cursor: "pointer",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  padding: "4px 8px"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {analysisLoading ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 0", gap: "16px" }}>
+                <div style={{
+                  width: "40px",
+                  height: "40px",
+                  border: "4px solid rgba(142, 68, 173, 0.2)",
+                  borderTop: "4px solid #9b59b6",
+                  borderRadius: "50%",
+                  animation: "spin 1s linear infinite"
+                }} />
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ color: "#fff", fontWeight: 600, fontSize: "14px", margin: "0 0 6px" }}>AI Analyst is Processing Data...</p>
+                  <p style={{ color: "#8e44ad", fontSize: "11px", fontStyle: "italic", margin: 0 }}>Evaluating overloads, spaces, progressive passes, and channels...</p>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {analysisError && (
+                  <div style={{ background: "rgba(231, 76, 60, 0.12)", border: "1px solid rgba(231, 76, 60, 0.4)", borderRadius: "8px", padding: "12px 16px", color: "#ff7675", fontSize: "13px" }}>
+                    ⚠️ <strong>Analysis API Key Missing or Error:</strong> {analysisError}
+                    <div style={{ fontSize: "11px", marginTop: "4px", color: "#ff9f43" }}>Note: The raw numerical telemetry dashboard is fully available on the right.</div>
+                  </div>
+                )}
+
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px", alignItems: "stretch" }}>
+                  
+                  {/* Left Column: AI report */}
+                  <div style={{
+                    background: "rgba(255,255,255,0.015)",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    maxHeight: "58vh",
+                    overflowY: "auto"
+                  }}>
+                    <h3 style={{ color: "#b784e8", fontSize: "14px", margin: "0 0 16px 0", fontWeight: 700, borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>📝</span> Architectural Audit Report
+                    </h3>
+                    
+                    {analysisResult ? (
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        {(() => {
+                          const sections = parseReportToSections(analysisResult);
+                          if (sections.length === 0) {
+                            return renderMarkdown(analysisResult);
+                          }
+                          return sections.map((sec, idx) => renderSectionCard(sec, idx));
+                        })()}
+                      </div>
+                    ) : (
+                      <div style={{ padding: "40px 0", textAlign: "center", color: "#888" }}>
+                        <span style={{ fontSize: "28px" }}>📊</span>
+                        <p style={{ margin: "10px 0 0 0", fontSize: "12px" }}>No report generated. Refer to telemetry values in the right sidebar.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column: Quantitative Telemetry Dashboard */}
+                  <div style={{
+                    maxHeight: "58vh",
+                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                    paddingRight: "4px"
+                  }}>
+                    {(() => {
+                      const avg = calculateAverageMetrics(analysisPayload);
+                      if (!avg) return <p style={{ color: "#aaa" }}>No telemetry data found.</p>;
+
+                      return (
+                        <>
+                          {/* Section 1: In Possession */}
+                          <div style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px" }}>
+                            <h4 style={{ color: "#2ecc71", margin: "0 0 12px 0", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", justifyContent: "space-between" }}>
+                              <span>🟢 In Possession (Attacking)</span>
+                              <span style={{ color: "#aaa", fontSize: "10px" }}>{avg.attacking.count} frames</span>
+                            </h4>
+                            
+                            {avg.attacking.count > 0 ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px" }}>
+                                <div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", marginBottom: "4px" }}>
+                                    <span>Zone of Influence (Overall):</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>A: {avg.attacking.influence.teamA}% / B: {avg.attacking.influence.teamB}%</span>
+                                  </div>
+                                  <div style={{ height: "4px", background: "#333", borderRadius: "2px", display: "flex", overflow: "hidden" }}>
+                                    <div style={{ width: `${avg.attacking.influence.teamA}%`, background: "#2ecc71" }} />
+                                    <div style={{ width: `${avg.attacking.influence.contested}%`, background: "#95a5a6" }} />
+                                    <div style={{ width: `${avg.attacking.influence.teamB}%`, background: "#e74c3c" }} />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", marginBottom: "4px" }}>
+                                    <span>Zone of Influence (Middle Third):</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>A: {avg.attacking.influenceThirds?.middle.teamA}% / B: {avg.attacking.influenceThirds?.middle.teamB}%</span>
+                                  </div>
+                                  <div style={{ height: "4px", background: "#333", borderRadius: "2px", display: "flex", overflow: "hidden" }}>
+                                    <div style={{ width: `${avg.attacking.influenceThirds?.middle.teamA}%`, background: "#2ecc71" }} />
+                                    <div style={{ width: `${avg.attacking.influenceThirds?.middle.contested}%`, background: "#95a5a6" }} />
+                                    <div style={{ width: `${avg.attacking.influenceThirds?.middle.teamB}%`, background: "#e74c3c" }} />
+                                  </div>
+                                </div>
+
+                                <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "6px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", marginBottom: "4px" }}>
+                                    <span>Avg Progressive Passing Options:</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>{avg.attacking.progressiveOptions}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa" }}>
+                                    <span>Avg progressive safe cells:</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>{avg.attacking.safeArea} grids</span>
+                                  </div>
+                                </div>
+
+                                <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "6px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", marginBottom: "4px" }}>
+                                    <span>Avg Available Run Channels:</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>{avg.attacking.runs}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#85c1e9", fontSize: "11px", paddingLeft: "8px" }}>
+                                    <span>Left: {avg.attacking.runsLeft} / Center: {avg.attacking.runsCenter} / Right: {avg.attacking.runsRight}</span>
+                                  </div>
+                                </div>
+
+                                <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "6px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", marginBottom: "4px" }}>
+                                    <span>Avg Attacking Overloads (2v2):</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>{avg.attacking.overloads} ({avg.attacking.overloadArea} grids)</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#d7bde2", fontSize: "11px", paddingLeft: "8px" }}>
+                                    <span>Left: {avg.attacking.overloadsLeft} / Center: {avg.attacking.overloadsCenter} / Right: {avg.attacking.overloadsRight}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <p style={{ color: "#666", fontSize: "11px", margin: 0, fontStyle: "italic" }}>No attacking frames detected in this sequence.</p>
+                            )}
+                          </div>
+
+                          {/* Section 2: Out of Possession */}
+                          <div style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px" }}>
+                            <h4 style={{ color: "#e74c3c", margin: "0 0 12px 0", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", justifyContent: "space-between" }}>
+                              <span>🔴 Out of Possession (Defending)</span>
+                              <span style={{ color: "#aaa", fontSize: "10px" }}>{avg.defending.count} frames</span>
+                            </h4>
+
+                            {avg.defending.count > 0 ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px" }}>
+                                <div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", marginBottom: "4px" }}>
+                                    <span>Zone of Influence (Overall):</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>A: {avg.defending.influence.teamA}% / B: {avg.defending.influence.teamB}%</span>
+                                  </div>
+                                  <div style={{ height: "4px", background: "#333", borderRadius: "2px", display: "flex", overflow: "hidden" }}>
+                                    <div style={{ width: `${avg.defending.influence.teamA}%`, background: "#2ecc71" }} />
+                                    <div style={{ width: `${avg.defending.influence.contested}%`, background: "#95a5a6" }} />
+                                    <div style={{ width: `${avg.defending.influence.teamB}%`, background: "#e74c3c" }} />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", marginBottom: "4px" }}>
+                                    <span>Zone of Influence (Defensive Third):</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>A: {avg.defending.influenceThirds?.defensive.teamA}% / B: {avg.defending.influenceThirds?.defensive.teamB}%</span>
+                                  </div>
+                                  <div style={{ height: "4px", background: "#333", borderRadius: "2px", display: "flex", overflow: "hidden" }}>
+                                    <div style={{ width: `${avg.defending.influenceThirds?.defensive.teamA}%`, background: "#2ecc71" }} />
+                                    <div style={{ width: `${avg.defending.influenceThirds?.defensive.contested}%`, background: "#95a5a6" }} />
+                                    <div style={{ width: `${avg.defending.influenceThirds?.defensive.teamB}%`, background: "#e74c3c" }} />
+                                  </div>
+                                </div>
+
+                                <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "6px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa" }}>
+                                    <span>Avg Vulnerable Regions:</span>
+                                    <span style={{ color: "#e74c3c", fontWeight: 600 }}>{avg.defending.vulnerability.regions} ({avg.defending.vulnerability.area} grids)</span>
+                                  </div>
+                                </div>
+
+                                <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "6px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", marginBottom: "4px" }}>
+                                    <span>Avg Opponent Progressive Options:</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>{avg.defending.progressiveOptions}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa" }}>
+                                    <span>Avg Opponent progressive safe cells:</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>{avg.defending.safeArea} grids</span>
+                                  </div>
+                                </div>
+
+                                <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "6px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", marginBottom: "4px" }}>
+                                    <span>Avg Opponent Run Channels:</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>{avg.defending.runs}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#85c1e9", fontSize: "11px", paddingLeft: "8px" }}>
+                                    <span>Left: {avg.defending.runsLeft} / Center: {avg.defending.runsCenter} / Right: {avg.defending.runsRight}</span>
+                                  </div>
+                                </div>
+
+                                <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "6px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", marginBottom: "4px" }}>
+                                    <span>Avg Defensive Overloads (2v2):</span>
+                                    <span style={{ color: "#fff", fontWeight: 600 }}>{avg.defending.overloads} ({avg.defending.overloadArea} grids)</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", color: "#d7bde2", fontSize: "11px", paddingLeft: "8px" }}>
+                                    <span>Left: {avg.defending.overloadsLeft} / Center: {avg.defending.overloadsCenter} / Right: {avg.defending.overloadsRight}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <p style={{ color: "#666", fontSize: "11px", margin: 0, fontStyle: "italic" }}>No defensive frames detected in this sequence.</p>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                </div>
+
+                <div style={{ ...styles.modalButtons, borderTop: "1px solid rgba(255, 255, 255, 0.1)", paddingTop: "14px", marginTop: "8px" }}>
+                  <button
+                    onClick={() => setShowAnalysisModal(false)}
+                    style={{ ...styles.modalSave, background: "rgba(255, 255, 255, 0.08)", color: "#fff" }}
+                  >
+                    Close Report
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1660,4 +2144,245 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: "#a0aec0",
   },
+};
+
+const calculateAverageMetrics = (payload: any) => {
+  if (!payload || !payload.frames || payload.frames.length === 0) return null;
+
+  const attackingFrames = payload.frames.filter((f: any) => f.possessionTeam === "A");
+  const defendingFrames = payload.frames.filter((f: any) => f.possessionTeam === "B");
+
+  const averageList = (frames: any[], keySelector: (f: any) => number) => {
+    if (frames.length === 0) return 0;
+    const sum = frames.reduce((acc, f) => acc + keySelector(f), 0);
+    return Math.round((sum / frames.length) * 10) / 10;
+  };
+
+  const averageObject = (frames: any[], path: "zoneOfInfluence" | "defensiveThird" | "middleThird" | "attackingThird") => {
+    if (frames.length === 0) return { teamA: 0, teamB: 0, contested: 0 };
+    let a = 0, b = 0, c = 0;
+    frames.forEach(f => {
+      const obj = path === "zoneOfInfluence" ? f.zoneOfInfluence.overall : f.zoneOfInfluence[path];
+      if (obj) {
+        a += obj.teamA || 0;
+        b += obj.teamB || 0;
+        c += obj.contested || 0;
+      }
+    });
+    return {
+      teamA: Math.round((a / frames.length) * 10) / 10,
+      teamB: Math.round((b / frames.length) * 10) / 10,
+      contested: Math.round((c / frames.length) * 10) / 10
+    };
+  };
+
+  return {
+    attacking: {
+      count: attackingFrames.length,
+      influence: averageObject(attackingFrames, "zoneOfInfluence"),
+      influenceThirds: attackingFrames.length > 0 ? {
+        defensive: averageObject(attackingFrames, "defensiveThird"),
+        middle: averageObject(attackingFrames, "middleThird"),
+        attacking: averageObject(attackingFrames, "attackingThird")
+      } : null,
+      progressiveOptions: averageList(attackingFrames, f => f.passingOptions.progressiveOptionsCount),
+      safeArea: averageList(attackingFrames, f => f.passingOptions.averageSafeCellsOfProgressiveOptions),
+      runs: averageList(attackingFrames, f => f.runningChannels.totalRunsCount),
+      runsLeft: averageList(attackingFrames, f => f.runningChannels.runsInLeft),
+      runsRight: averageList(attackingFrames, f => f.runningChannels.runsInRight),
+      runsCenter: averageList(attackingFrames, f => f.runningChannels.runsInCenter),
+      overloads: averageList(attackingFrames, f => f.attackingOverloads.totalOverloadsCount),
+      overloadArea: averageList(attackingFrames, f => f.attackingOverloads.totalOverloadCells),
+      overloadsLeft: averageList(attackingFrames, f => f.attackingOverloads.overloadsInLeft),
+      overloadsRight: averageList(attackingFrames, f => f.attackingOverloads.overloadsInRight),
+      overloadsCenter: averageList(attackingFrames, f => f.attackingOverloads.overloadsInCenter)
+    },
+    defending: {
+      count: defendingFrames.length,
+      influence: averageObject(defendingFrames, "zoneOfInfluence"),
+      influenceThirds: defendingFrames.length > 0 ? {
+        defensive: averageObject(defendingFrames, "defensiveThird"),
+        middle: averageObject(defendingFrames, "middleThird"),
+        attacking: averageObject(defendingFrames, "attackingThird")
+      } : null,
+      vulnerability: {
+        regions: averageList(defendingFrames, f => f.vulnerabilityDefendingHalf.vulnerableRegionsCount),
+        area: averageList(defendingFrames, f => f.vulnerabilityDefendingHalf.totalVulnerableCells)
+      },
+      progressiveOptions: averageList(defendingFrames, f => f.opponentPassingOptions.progressiveOptionsCount),
+      safeArea: averageList(defendingFrames, f => f.opponentPassingOptions.averageSafeCellsOfProgressiveOptions),
+      runs: averageList(defendingFrames, f => f.opponentRuns.totalRunsCount),
+      runsLeft: averageList(defendingFrames, f => f.opponentRuns.runsInLeft),
+      runsRight: averageList(defendingFrames, f => f.opponentRuns.runsInRight),
+      runsCenter: averageList(defendingFrames, f => f.opponentRuns.runsInCenter),
+      overloads: averageList(defendingFrames, f => f.defensiveOverloads.totalOverloadsCount),
+      overloadArea: averageList(defendingFrames, f => f.defensiveOverloads.totalOverloadCells),
+      overloadsLeft: averageList(defendingFrames, f => f.defensiveOverloads.overloadsInLeft),
+      overloadsRight: averageList(defendingFrames, f => f.defensiveOverloads.overloadsInRight),
+      overloadsCenter: averageList(defendingFrames, f => f.defensiveOverloads.overloadsInCenter)
+    }
+  };
+};
+
+const renderMarkdown = (text: string) => {
+  const lines = text.split("\n");
+  return lines.map((line, idx) => {
+    if (line.startsWith("### ")) {
+      return <h4 key={idx} style={{ margin: "16px 0 8px", color: "#b784e8", fontSize: "14px", fontWeight: 700 }}>{line.slice(4)}</h4>;
+    }
+    if (line.startsWith("## ")) {
+      return <h3 key={idx} style={{ margin: "20px 0 10px", color: "#9b59b6", fontSize: "15px", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "4px", fontWeight: 700 }}>{line.slice(3)}</h3>;
+    }
+    if (line.startsWith("# ")) {
+      return <h2 key={idx} style={{ margin: "24px 0 12px", color: "#fff", fontSize: "17px", fontWeight: 700 }}>{line.slice(2)}</h2>;
+    }
+    if (line.startsWith("- ") || line.startsWith("* ")) {
+      return (
+        <li key={idx} style={{ marginLeft: "16px", marginBottom: "4px", color: "#ccc", listStyleType: "disc" }}>
+          {parseInlineMarkdown(line.slice(2))}
+        </li>
+      );
+    }
+    const numMatch = line.match(/^(\d+)\.\s(.*)/);
+    if (numMatch) {
+      return (
+        <div key={idx} style={{ display: "flex", gap: "8px", marginLeft: "8px", marginBottom: "6px", color: "#ccc" }}>
+          <span style={{ color: "#9b59b6", fontWeight: "bold" }}>{numMatch[1]}.</span>
+          <span>{parseInlineMarkdown(numMatch[2])}</span>
+        </div>
+      );
+    }
+    if (line.trim() === "") {
+      return <div key={idx} style={{ height: "8px" }} />;
+    }
+    return <p key={idx} style={{ margin: "0 0 8px", color: "#ddd", lineHeight: "1.5", fontSize: "13px" }}>{parseInlineMarkdown(line)}</p>;
+  });
+};
+
+const parseInlineMarkdown = (text: string) => {
+  const parts: any[] = [];
+  let remaining = text;
+  
+  while (remaining.length > 0) {
+    const boldIndex = remaining.indexOf("**");
+    if (boldIndex === -1) {
+      parts.push(remaining);
+      break;
+    }
+    
+    if (boldIndex > 0) {
+      parts.push(remaining.slice(0, boldIndex));
+    }
+    
+    const nextBoldIndex = remaining.indexOf("**", boldIndex + 2);
+    if (nextBoldIndex === -1) {
+      parts.push(remaining.slice(boldIndex));
+      break;
+    }
+    
+    const boldText = remaining.slice(boldIndex + 2, nextBoldIndex);
+    parts.push(<strong key={boldIndex} style={{ color: "#fff", fontWeight: 600 }}>{boldText}</strong>);
+    remaining = remaining.slice(nextBoldIndex + 2);
+  }
+  
+  return parts;
+};
+
+interface ReportSection {
+  title: string;
+  items: string[];
+}
+
+const parseReportToSections = (text: string): ReportSection[] => {
+  const sections: ReportSection[] = [];
+  let currentSection: ReportSection | null = null;
+  const lines = text.split("\n");
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (trimmed === "") return;
+
+    // Detect section headers (markdown header tags, bold headers, or numbered bold headers)
+    const isHeader = trimmed.startsWith("###") || 
+                     trimmed.startsWith("##") || 
+                     trimmed.startsWith("#") || 
+                     (trimmed.startsWith("**") && trimmed.endsWith("**")) ||
+                     /^\d+\.\s+\*\*/.test(trimmed);
+    
+    if (isHeader) {
+      const cleanTitle = trimmed
+        .replace(/^(?:###|##|#|\d+\.)\s*/, "")
+        .replace(/\*\*/g, "")
+        .trim();
+      currentSection = { title: cleanTitle, items: [] };
+      sections.push(currentSection);
+    } else if (currentSection) {
+      let cleanItem = trimmed;
+      if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+        cleanItem = trimmed.slice(2);
+      } else if (trimmed.startsWith("• ")) {
+        cleanItem = trimmed.slice(2);
+      }
+      currentSection.items.push(cleanItem);
+    }
+  });
+
+  return sections;
+};
+
+const renderSectionCard = (section: ReportSection, idx: number) => {
+  const titleLower = section.title.toLowerCase();
+  
+  let icon = "📊";
+  let color = "#3498db";
+  
+  if (titleLower.includes("overview") || titleLower.includes("compactness") || titleLower.includes("stability")) {
+    icon = "📐";
+    color = "#b784e8";
+  } else if (titleLower.includes("attacking") || titleLower.includes("exploit") || titleLower.includes("opening")) {
+    icon = "🎯";
+    color = "#2ecc71";
+  } else if (titleLower.includes("defensive") || titleLower.includes("gap") || titleLower.includes("vulnerability") || titleLower.includes("flaw")) {
+    icon = "⚠️";
+    color = "#e74c3c";
+  } else if (titleLower.includes("key") || titleLower.includes("node") || titleLower.includes("pivot") || titleLower.includes("terminal")) {
+    icon = "🔑";
+    color = "#ff9f43";
+  }
+
+  return (
+    <div key={idx} style={{
+      background: "rgba(255, 255, 255, 0.015)",
+      border: "1px solid rgba(255, 255, 255, 0.05)",
+      borderLeft: `4px solid ${color}`,
+      borderRadius: "12px",
+      padding: "16px 20px",
+      marginBottom: "16px",
+      boxShadow: "0 4px 15px rgba(0, 0, 0, 0.15)",
+      transition: "all 0.2s ease"
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+        <span style={{ fontSize: "16px" }}>{icon}</span>
+        <h4 style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          {section.title}
+        </h4>
+      </div>
+      
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {section.items.map((item, itemIdx) => (
+          <div key={itemIdx} style={{
+            display: "flex",
+            gap: "10px",
+            alignItems: "flex-start",
+            fontSize: "12.5px",
+            color: "#ccc",
+            lineHeight: "1.5"
+          }}>
+            <span style={{ color: color, fontSize: "11px", marginTop: "3px" }}>⚡</span>
+            <div style={{ flex: 1 }}>{parseInlineMarkdown(item)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };

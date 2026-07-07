@@ -100,6 +100,21 @@ export interface RunningChannelsResult {
   timestamp: number;
 }
 
+export interface OverloadRegion {
+  cells: { col: number; row: number }[];
+  representativePoint: { x: number; y: number };
+  area: number;
+  averageArrivalMargin: number;
+  primaryAttackerId: string;
+  supportingAttackerId: string;
+  primaryDefenderId: string;
+}
+
+export interface OverloadAnalysisResult {
+  regions: OverloadRegion[];
+  timestamp: number;
+}
+
 export type GameStateActionType = "load" | "update" | "list_update" | "selection_update";
 
 export interface GameStateAction {
@@ -315,6 +330,12 @@ export class GameStateStore {
   private runningChannelsCache: RunningChannelsResult | null = null;
   private runningChannelsValid: boolean = false;
 
+  // Overload Analysis state
+  private showAttackingOverload: boolean = false;
+  private showDefensiveOverload: boolean = false;
+  private overloadAnalysisCache: OverloadAnalysisResult | null = null;
+  private overloadAnalysisValid: boolean = false;
+
   private readonly subscribers = new Set<GameStateSubscriber>();
 
   constructor() {
@@ -332,6 +353,7 @@ export class GameStateStore {
     this.exploitabilityValid = false; // Invalidate exploitability cache on any state mutation
     this.passingAnalysisValid = false; // Invalidate passing analysis cache on any state mutation
     this.runningChannelsValid = false; // Invalidate running channels cache on any state mutation
+    this.overloadAnalysisValid = false; // Invalidate overload cache on any state mutation
 
     // Clone state to trigger react useSyncExternalStore change detection instantly
     this.gameState = {
@@ -439,6 +461,24 @@ export class GameStateStore {
 
   toggleOpponentRuns(): void {
     this.showOpponentRuns = !this.showOpponentRuns;
+    this.notify("update");
+  }
+
+  getShowAttackingOverload(): boolean {
+    return this.showAttackingOverload;
+  }
+
+  toggleAttackingOverload(): void {
+    this.showAttackingOverload = !this.showAttackingOverload;
+    this.notify("update");
+  }
+
+  getShowDefensiveOverload(): boolean {
+    return this.showDefensiveOverload;
+  }
+
+  toggleDefensiveOverload(): void {
+    this.showDefensiveOverload = !this.showDefensiveOverload;
     this.notify("update");
   }
 
@@ -579,6 +619,254 @@ export class GameStateStore {
       this.runningChannelsValid = true;
     }
     return this.runningChannelsCache;
+  }
+
+  getOverloadAnalysisResult(): OverloadAnalysisResult {
+    if (!this.overloadAnalysisValid || !this.overloadAnalysisCache) {
+      this.overloadAnalysisCache = this.computeOverloadAnalysis();
+      this.overloadAnalysisValid = true;
+    }
+    return this.overloadAnalysisCache;
+  }
+
+  private computeOverloadAnalysis(): OverloadAnalysisResult {
+    const exploitability = this.getExploitabilityResult();
+
+    const cols = 80;
+    const rows = 48;
+    const cellW = 100 / cols;
+    const cellH = 60 / rows;
+
+    // Resolve Attacking vs Defending team dynamically based on ball possession
+    let attackingTeam: "A" | "B" = "A";
+    let defendingTeam: "A" | "B" = "B";
+
+    const possessorId = this.gameState.ball.playerIdWhoHasPossession;
+    if (possessorId) {
+      const p = this.gameState.players.find((pl) => pl.id === possessorId);
+      if (p) {
+        if (p.team === "B") {
+          attackingTeam = "B";
+          defendingTeam = "A";
+        }
+      }
+    }
+
+    // Sort defending team's players by x-coordinate to find the offside line
+    const defenderXs = this.gameState.players
+      .filter((p) => p.team === defendingTeam && !p.referee)
+      .map((p) => p.x)
+      .sort((a, b) => a - b);
+
+    const bx = this.gameState.ball.x;
+    const offsidePlayerIds = new Set<string>();
+
+    let offsideLineX = 0;
+    if (defendingTeam === "A") {
+      if (defenderXs.length >= 2) {
+        offsideLineX = defenderXs[1];
+      } else if (defenderXs.length === 1) {
+        offsideLineX = defenderXs[0];
+      }
+
+      this.gameState.players.forEach((p) => {
+        if (p.team === attackingTeam && !p.referee) {
+          if (p.x < 50.0 && p.x < offsideLineX && p.x < bx) {
+            offsidePlayerIds.add(p.id);
+          }
+        }
+      });
+    } else {
+      offsideLineX = 100;
+      const n = defenderXs.length;
+      if (n >= 2) {
+        offsideLineX = defenderXs[n - 2];
+      } else if (n === 1) {
+        offsideLineX = defenderXs[0];
+      }
+
+      this.gameState.players.forEach((p) => {
+        if (p.team === attackingTeam && !p.referee) {
+          if (p.x > 50.0 && p.x > offsideLineX && p.x > bx) {
+            offsidePlayerIds.add(p.id);
+          }
+        }
+      });
+    }
+
+    const activeCells: {
+      col: number;
+      row: number;
+      cx: number;
+      cy: number;
+      a1: string;
+      a2: string;
+      d1: string;
+      margin: number;
+    }[] = [];
+
+    for (let c = 0; c < cols; c++) {
+      const cx = (c + 0.5) * cellW;
+
+      // 1. Spatial Constraint:
+      // Attacking Overload (A has possession): x >= 66.67
+      // Defensive Overload (B has possession): x <= 33.33
+      if (attackingTeam === "A" && cx < 66.67) continue;
+      if (attackingTeam === "B" && cx > 33.33) continue;
+
+      for (let r = 0; r < rows; r++) {
+        const cy = (r + 0.5) * cellH;
+        const expCell = exploitability.cells[c][r];
+
+        // 2. Tactical Constraint: Exploitable or Contested
+        if (expCell.state !== ExploitabilityState.Exploitable && expCell.state !== ExploitabilityState.Contested) {
+          continue;
+        }
+
+        // Calculate arrival times for all attackers and defenders
+        const attackers: { id: string; t: number }[] = [];
+        const defenders: { id: string; t: number }[] = [];
+
+        this.gameState.players.forEach((p) => {
+          if (p.referee || p.team === "NONE") return;
+          if (possessorId && p.id === possessorId) return;
+          if (p.team === attackingTeam && offsidePlayerIds.has(p.id)) return;
+
+          const dx = cx - p.x;
+          const dy = cy - p.y;
+          const dist = Math.hypot(dx, dy);
+
+          const travelTime = dist / 8.0;
+
+          let turnPenalty = 0;
+          if (dist > 0.01) {
+            let targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+            if (targetAngle < 0) targetAngle += 360;
+
+            let diff = Math.abs(targetAngle - p.heading_angle);
+            diff = diff % 360;
+            if (diff > 180) diff = 360 - diff;
+
+            if (diff > 30) {
+              const effRad = ((diff - 30) * Math.PI) / 180;
+              turnPenalty = 0.25 * Math.sin(effRad / 2);
+            }
+          }
+
+          let reactionTax = 0;
+          if (possessorId && p.team === defendingTeam) {
+            reactionTax = 0.15;
+          }
+
+          const arrivalTime = travelTime + turnPenalty + reactionTax;
+
+          if (p.team === attackingTeam) {
+            attackers.push({ id: p.id, t: arrivalTime });
+          } else {
+            defenders.push({ id: p.id, t: arrivalTime });
+          }
+        });
+
+        if (attackers.length < 2 || defenders.length < 2) continue;
+
+        attackers.sort((a, b) => a.t - b.t);
+        defenders.sort((a, b) => a.t - b.t);
+
+        const tA2 = attackers[1].t;
+        const tD2 = defenders[1].t;
+
+        // 3. Overload Condition: T_A2 + 0.5 < T_D2
+        if (tA2 + 0.5 < tD2) {
+          activeCells.push({
+            col: c,
+            row: r,
+            cx,
+            cy,
+            a1: attackers[0].id,
+            a2: attackers[1].id,
+            d1: defenders[0].id,
+            margin: tD2 - tA2,
+          });
+        }
+      }
+    }
+
+    const regions: OverloadRegion[] = [];
+    if (activeCells.length === 0) {
+      return { regions, timestamp: Date.now() };
+    }
+
+    // Group active cells using 8-connectivity CCA
+    const activeMap = Array.from({ length: cols }, () => new Uint8Array(rows));
+    activeCells.forEach(cell => activeMap[cell.col][cell.row] = 1);
+
+    const visited = Array.from({ length: cols }, () => new Uint8Array(rows));
+
+    for (const startCell of activeCells) {
+      if (!visited[startCell.col][startCell.row]) {
+        const component: typeof activeCells = [];
+        const queue: [number, number][] = [[startCell.col, startCell.row]];
+        visited[startCell.col][startCell.row] = 1;
+
+        while (queue.length > 0) {
+          const [cc, cr] = queue.shift()!;
+          const match = activeCells.find(cell => cell.col === cc && cell.row === cr);
+          if (match) component.push(match);
+
+          for (let dc = -1; dc <= 1; dc++) {
+            for (let dr = -1; dr <= 1; dr++) {
+              if (dc === 0 && dr === 0) continue;
+              const nc = cc + dc;
+              const nr = cr + dr;
+              if (nc >= 0 && nc < cols && nr >= 0 && nr < rows) {
+                if (activeMap[nc][nr] > 0 && !visited[nc][nr]) {
+                  visited[nc][nr] = 1;
+                  queue.push([nc, nr]);
+                }
+              }
+            }
+          }
+        }
+
+        // Filter components: size >= 9 cells
+        if (component.length >= 9) {
+          let sumX = 0;
+          let sumY = 0;
+          let sumMargin = 0;
+          const a1Freq: Record<string, number> = {};
+          const a2Freq: Record<string, number> = {};
+          const d1Freq: Record<string, number> = {};
+
+          component.forEach(c => {
+            sumX += c.cx;
+            sumY += c.cy;
+            sumMargin += c.margin;
+            a1Freq[c.a1] = (a1Freq[c.a1] || 0) + 1;
+            a2Freq[c.a2] = (a2Freq[c.a2] || 0) + 1;
+            d1Freq[c.d1] = (d1Freq[c.d1] || 0) + 1;
+          });
+
+          const primaryAttackerId = Object.keys(a1Freq).reduce((a, b) => a1Freq[a] > a1Freq[b] ? a : b);
+          const supportingAttackerId = Object.keys(a2Freq).reduce((a, b) => a2Freq[a] > a2Freq[b] ? a : b);
+          const primaryDefenderId = Object.keys(d1Freq).reduce((a, b) => d1Freq[a] > d1Freq[b] ? a : b);
+
+          regions.push({
+            cells: component.map(c => ({ col: c.col, row: c.row })),
+            representativePoint: { x: sumX / component.length, y: sumY / component.length },
+            area: component.length * cellW * cellH,
+            averageArrivalMargin: sumMargin / component.length,
+            primaryAttackerId,
+            supportingAttackerId,
+            primaryDefenderId,
+          });
+        }
+      }
+    }
+
+    return {
+      regions,
+      timestamp: Date.now(),
+    };
   }
 
   private computeRunningChannels(): RunningChannelsResult {
@@ -1669,6 +1957,431 @@ export class GameStateStore {
       console.error("Failed to parse imported JSON:", e);
     }
     return false;
+  }
+
+  getTacticalAnalysisPayload(mode: "current" | "sequence"): any {
+    const originalState = this.gameState;
+    const frames: any[] = [];
+
+    if (mode === "sequence" && this.currentSequence && this.currentSequence.boards.length > 0) {
+      this.currentSequence.boards.forEach((board, idx) => {
+        frames.push(this.extractTacticalMetricsForState(board, idx));
+      });
+    } else {
+      frames.push(this.extractTacticalMetricsForState(this.gameState, 0));
+    }
+
+    // Restore original state and invalidate caches to clean up
+    this.gameState = originalState;
+    this.zoneInfluenceValid = false;
+    this.exploitabilityValid = false;
+    this.passingAnalysisValid = false;
+    this.runningChannelsValid = false;
+    this.overloadAnalysisValid = false;
+
+    return {
+      boardCount: frames.length,
+      frames
+    };
+  }
+
+  private extractTacticalMetricsForState(state: GameStateJSON, frameIndex: number): any {
+    this.gameState = state;
+    this.zoneInfluenceValid = false;
+    this.exploitabilityValid = false;
+    this.passingAnalysisValid = false;
+    this.runningChannelsValid = false;
+    this.overloadAnalysisValid = false;
+
+    // Resolve Attacking vs Defending team dynamically based on ball possession
+    let attackingTeam: "A" | "B" = "A";
+    const possessorId = state.ball.playerIdWhoHasPossession;
+    if (possessorId) {
+      const p = state.players.find((pl: any) => pl.id === possessorId);
+      if (p) {
+        if (p.team === "B") {
+          attackingTeam = "B";
+        }
+      }
+    }
+
+    const teamAPhase = (attackingTeam === "A") ? "attacking" : "defending";
+
+    const cols = 80;
+    const rows = 48;
+    const cellW = 100 / cols;
+    const cellH = 60 / rows;
+
+    // 1. Zone of Influence
+    const influence = this.getZoneInfluenceResult();
+    let defThird = { teamA: 0, teamB: 0, contested: 0 };
+    let midThird = { teamA: 0, teamB: 0, contested: 0 };
+    let attThird = { teamA: 0, teamB: 0, contested: 0 };
+
+    let overallTeamA = 0;
+    let overallTeamB = 0;
+    let overallContested = 0;
+
+    for (let c = 0; c < cols; c++) {
+      const cx = (c + 0.5) * cellW;
+      let third: "def" | "mid" | "att";
+      if (attackingTeam === "A") {
+        if (cx < 33.33) third = "def";
+        else if (cx < 66.67) third = "mid";
+        else third = "att";
+      } else {
+        if (cx >= 66.67) third = "def";
+        else if (cx >= 33.33) third = "mid";
+        else third = "att";
+      }
+
+      for (let r = 0; r < rows; r++) {
+        const cell = influence.cells[c][r];
+        const target = third === "def" ? defThird : third === "mid" ? midThird : attThird;
+        if (cell.controllingTeam === "A") {
+          target.teamA++;
+          overallTeamA++;
+        } else if (cell.controllingTeam === "B") {
+          target.teamB++;
+          overallTeamB++;
+        } else {
+          target.contested++;
+          overallContested++;
+        }
+      }
+    }
+
+    const thirdsPct = (third: typeof defThird) => {
+      const total = third.teamA + third.teamB + third.contested || 1;
+      return {
+        teamA: Math.round((third.teamA / total) * 1000) / 10,
+        teamB: Math.round((third.teamB / total) * 1000) / 10,
+        contested: Math.round((third.contested / total) * 1000) / 10
+      };
+    };
+
+    const zoneOfInfluence = {
+      overall: {
+        teamA: Math.round((overallTeamA / 3840) * 1000) / 10,
+        teamB: Math.round((overallTeamB / 3840) * 1000) / 10,
+        contested: Math.round((overallContested / 3840) * 1000) / 10
+      },
+      defensiveThird: thirdsPct(defThird),
+      middleThird: thirdsPct(midThird),
+      attackingThird: thirdsPct(attThird)
+    };
+
+    // 2. Exploitability in Opponent half only
+    const exploitability = this.getExploitabilityResult();
+    let exploitableCells = 0;
+    let contestedCells = 0;
+    let defendedCells = 0;
+    let uselessCells = 0;
+    let opponentHalfCellsCount = 0;
+
+    for (let c = 0; c < cols; c++) {
+      const cx = (c + 0.5) * cellW;
+      const isOpponentHalf = (attackingTeam === "A") ? (cx >= 50.0) : (cx <= 50.0);
+      if (!isOpponentHalf) continue;
+
+      for (let r = 0; r < rows; r++) {
+        opponentHalfCellsCount++;
+        const stateVal = exploitability.cells[c][r].state;
+        if (stateVal === ExploitabilityState.Defended) defendedCells++;
+        else if (stateVal === ExploitabilityState.Exploitable) exploitableCells++;
+        else if (stateVal === ExploitabilityState.Contested) contestedCells++;
+        else if (stateVal === ExploitabilityState.Useless) uselessCells++;
+      }
+    }
+
+    const opTotal = opponentHalfCellsCount || 1;
+    const exploitabilityOpponentHalf = {
+      exploitableCellsPct: Math.round((exploitableCells / opTotal) * 1000) / 10,
+      contestedCellsPct: Math.round((contestedCells / opTotal) * 1000) / 10,
+      defendedCellsPct: Math.round((defendedCells / opTotal) * 1000) / 10,
+      uselessCellsPct: Math.round((uselessCells / opTotal) * 1000) / 10
+    };
+
+    // 3. Vulnerability in Opponent half only (active when B is attacking, i.e., attackingTeam === "B")
+    let vulnerableRegionsCount = 0;
+    let totalVulnerableCells = 0;
+
+    if (attackingTeam === "B") {
+      const cellStates: string[][] = [];
+      for (let c = 0; c < cols; c++) {
+        cellStates[c] = [];
+        for (let r = 0; r < rows; r++) {
+          const stateVal = exploitability.cells[c][r].state;
+          cellStates[c][r] = stateVal === ExploitabilityState.Exploitable ? "Exploitable" : stateVal === ExploitabilityState.Contested ? "Contested" : stateVal === ExploitabilityState.Useless ? "Useless" : "Defended";
+        }
+      }
+
+      const visited = Array.from({ length: cols }, () => new Uint8Array(rows));
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          if (cellStates[c][r] === "Exploitable" && !visited[c][r]) {
+            const component: [number, number][] = [];
+            const queue: [number, number][] = [[c, r]];
+            visited[c][r] = 1;
+
+            while (queue.length > 0) {
+              const curr = queue.shift()!;
+              component.push(curr);
+              const [cc, cr] = curr;
+
+              for (let dc = -1; dc <= 1; dc++) {
+                for (let dr = -1; dr <= 1; dr++) {
+                  if (dc === 0 && dr === 0) continue;
+                  const nc = cc + dc;
+                  const nr = cr + dr;
+                  if (nc >= 0 && nc < cols && nr >= 0 && nr < rows) {
+                    if (cellStates[nc][nr] === "Exploitable" && !visited[nc][nr]) {
+                      visited[nc][nr] = 1;
+                      queue.push([nc, nr]);
+                    }
+                  }
+                }
+              }
+            }
+
+            if (component.length < 6) {
+              component.forEach(([cc, cr]) => {
+                cellStates[cc][cr] = "Useless";
+              });
+            }
+          }
+        }
+      }
+
+      // Ray trace for Useless
+      const bx = state.ball.x;
+      const by = state.ball.y;
+      const tracedStates = cellStates.map((col) => [...col]);
+
+      for (let c = 0; c < cols; c++) {
+        const cx = (c + 0.5) * cellW;
+        for (let r = 0; r < rows; r++) {
+          if (cellStates[c][r] === "Useless") {
+            const cellInfo = exploitability.cells[c][r];
+            if (cellInfo.defenderArrival <= cellInfo.attackerArrival) {
+              tracedStates[c][r] = "Defended";
+              continue;
+            }
+
+            const cy = (r + 0.5) * cellH;
+            const vx = cx - bx;
+            const vy = cy - by;
+            const dist = Math.hypot(vx, vy);
+            if (dist < 0.05) continue;
+
+            const dx = vx / dist;
+            const dy = vy / dist;
+            let inherited = "Useless";
+
+            for (let s = 1; s <= 120; s++) {
+              const tx = cx + s * 1.0 * dx;
+              const ty = cy + s * 1.0 * dy;
+              if (tx < 0 || tx > 100 || ty < 0 || ty > 60) break;
+
+              const tc = Math.floor(tx / cellW);
+              const tr = Math.floor(ty / cellH);
+              if (tc >= 0 && tc < cols && tr >= 0 && tr < rows) {
+                if (cellStates[tc][tr] !== "Useless") {
+                  inherited = cellStates[tc][tr];
+                  break;
+                }
+              }
+            }
+            tracedStates[c][r] = inherited;
+          }
+        }
+      }
+
+      // Group Exploitable in opponent half (x <= 50.0 since B is attacking)
+      const vulnVisited = Array.from({ length: cols }, () => new Uint8Array(rows));
+      for (let c = 0; c < cols; c++) {
+        const cx = (c + 0.5) * cellW;
+        if (cx > 50.0) continue; // Opponent half only
+
+        for (let r = 0; r < rows; r++) {
+          if (tracedStates[c][r] === "Exploitable" && !vulnVisited[c][r]) {
+            const component: [number, number][] = [];
+            const queue: [number, number][] = [[c, r]];
+            vulnVisited[c][r] = 1;
+
+            while (queue.length > 0) {
+              const curr = queue.shift()!;
+              component.push(curr);
+              const [cc, cr] = curr;
+
+              for (let dc = -1; dc <= 1; dc++) {
+                for (let dr = -1; dr <= 1; dr++) {
+                  if (dc === 0 && dr === 0) continue;
+                  const nc = cc + dc;
+                  const nr = cr + dr;
+                  if (nc >= 0 && nc < cols && nr >= 0 && nr < rows) {
+                    const ncx = (nc + 0.5) * cellW;
+                    if (ncx <= 50.0 && tracedStates[nc][nr] === "Exploitable" && !vulnVisited[nc][nr]) {
+                      vulnVisited[nc][nr] = 1;
+                      queue.push([nc, nr]);
+                    }
+                  }
+                }
+              }
+            }
+            vulnerableRegionsCount++;
+            totalVulnerableCells += component.length;
+          }
+        }
+      }
+    }
+
+    const vulnerabilityDefendingHalf = {
+      vulnerableRegionsCount,
+      totalVulnerableCells
+    };
+
+    // 4. Passing Options (and Opponent Passing Options)
+    const getPassingStats = (isAttacker: boolean) => {
+      const matchesPossession = isAttacker ? (attackingTeam === "A") : (attackingTeam === "B");
+      if (!matchesPossession) {
+        return {
+          totalOptionsCount: 0,
+          progressiveOptionsCount: 0,
+          averageSafeAreaOfProgressiveOptions: 0,
+          bestProgressiveOption: null
+        };
+      }
+
+      const passingResult = this.getPassingAnalysisResult();
+      const bx = state.ball.x;
+      const by = state.ball.y;
+
+      const progressiveOptions = passingResult.options.filter((opt) => {
+        const isProg = (attackingTeam === "A") ? (opt.representativePoint.x > bx) : (opt.representativePoint.x < bx);
+        return isProg;
+      });
+
+      const safeProgressiveOptions = progressiveOptions.filter(o => o.hasSafe);
+      const avgSafeCells = safeProgressiveOptions.length > 0
+        ? safeProgressiveOptions.reduce((acc, curr) => acc + curr.safeCells.length, 0) / safeProgressiveOptions.length
+        : 0;
+
+      let bestProg: any = null;
+      let minDistanceToGoal = Infinity;
+
+      safeProgressiveOptions.forEach((opt) => {
+        const distToGoal = (attackingTeam === "A") ? (100 - opt.representativePoint.x) : opt.representativePoint.x;
+        if (distToGoal < minDistanceToGoal) {
+          minDistanceToGoal = distToGoal;
+          bestProg = opt;
+        }
+      });
+
+      let bestProgressiveOption = null;
+      if (bestProg) {
+        const player = state.players.find((p: any) => p.id === bestProg.playerId);
+        bestProgressiveOption = {
+          jerseyNumber: player?.jerseyNumber || "Unknown",
+          distanceToGoalLine: Math.round(minDistanceToGoal * 10) / 10,
+          passDistance: Math.round(Math.hypot(bestProg.representativePoint.x - bx, bestProg.representativePoint.y - by) * 10) / 10,
+          cellsCount: bestProg.safeCells.length,
+          targetPoint: {
+            x: Math.round(bestProg.representativePoint.x * 10) / 10,
+            y: Math.round(bestProg.representativePoint.y * 10) / 10
+          }
+        };
+      }
+
+      return {
+        totalOptionsCount: passingResult.options.length,
+        progressiveOptionsCount: progressiveOptions.length,
+        averageSafeCellsOfProgressiveOptions: Math.round(avgSafeCells * 10) / 10,
+        bestProgressiveOption
+      };
+    };
+
+    const passingOptions = getPassingStats(true);
+    const opponentPassingOptions = getPassingStats(false);
+
+    // 5. Running Channels / Opponent Runs
+    const getRunStats = (isAttacker: boolean) => {
+      const matchesPossession = isAttacker ? (attackingTeam === "A") : (attackingTeam === "B");
+      if (!matchesPossession) {
+        return { totalRunsCount: 0, runsInLeft: 0, runsInRight: 0, runsInCenter: 0 };
+      }
+
+      const runningResult = this.getRunningChannelsResult();
+      let runsInLeft = 0;
+      let runsInRight = 0;
+      let runsInCenter = 0;
+
+      runningResult.channels.forEach((ch) => {
+        const y = ch.representativePoint.y;
+        if (y < 20.0) runsInLeft++;
+        else if (y > 40.0) runsInRight++;
+        else runsInCenter++;
+      });
+
+      return {
+        totalRunsCount: runningResult.channels.length,
+        runsInLeft,
+        runsInRight,
+        runsInCenter
+      };
+    };
+
+    const runningChannels = getRunStats(true);
+    const opponentRuns = getRunStats(false);
+
+    // 6. Overloads
+    const getOverloadStats = (isAttackingOverload: boolean) => {
+      const matchesPossession = isAttackingOverload ? (attackingTeam === "A") : (attackingTeam === "B");
+      if (!matchesPossession) {
+        return { totalOverloadsCount: 0, totalOverloadCells: 0, overloadsInLeft: 0, overloadsInRight: 0, overloadsInCenter: 0 };
+      }
+
+      const overloadResult = this.getOverloadAnalysisResult();
+      let totalOverloadCells = 0;
+      let overloadsInLeft = 0;
+      let overloadsInRight = 0;
+      let overloadsInCenter = 0;
+
+      overloadResult.regions.forEach((reg) => {
+        totalOverloadCells += reg.cells.length;
+        const y = reg.representativePoint.y;
+        if (y < 20.0) overloadsInLeft++;
+        else if (y > 40.0) overloadsInRight++;
+        else overloadsInCenter++;
+      });
+
+      return {
+        totalOverloadsCount: overloadResult.regions.length,
+        totalOverloadCells,
+        overloadsInLeft,
+        overloadsInRight,
+        overloadsInCenter
+      };
+    };
+
+    const attackingOverloads = getOverloadStats(true);
+    const defensiveOverloads = getOverloadStats(false);
+
+    return {
+      frameIndex,
+      possessionTeam: attackingTeam,
+      teamAPhase,
+      ball: { x: Math.round(state.ball.x * 10) / 10, y: Math.round(state.ball.y * 10) / 10 },
+      zoneOfInfluence,
+      exploitabilityOpponentHalf,
+      vulnerabilityDefendingHalf,
+      passingOptions,
+      opponentPassingOptions,
+      runningChannels,
+      opponentRuns,
+      attackingOverloads,
+      defensiveOverloads
+    };
   }
 }
 

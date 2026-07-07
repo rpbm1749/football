@@ -52,6 +52,16 @@ export function PitchCanvas() {
     gameStateStore.getShowOpponentRuns.bind(gameStateStore)
   );
 
+  const showAttackingOverload = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowAttackingOverload.bind(gameStateStore)
+  );
+
+  const showDefensiveOverload = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getShowDefensiveOverload.bind(gameStateStore)
+  );
+
   // Track dragging / rotating states locally
   const interactionRef = useRef<{
     isDragging: boolean;
@@ -589,6 +599,142 @@ export function PitchCanvas() {
       });
     }
 
+    // 1.9. Draw Overload Analysis Overlay (if active in View Mode)
+    const possessorForOverload = state.players.find(p => p.id === state.ball.playerIdWhoHasPossession);
+    const isTeamAAttackingForOverload = possessorForOverload?.team === "A";
+    const isTeamBAttackingForOverload = possessorForOverload?.team === "B";
+    const shouldRenderOverloads = !editMode && (
+      (showAttackingOverload && isTeamAAttackingForOverload) ||
+      (showDefensiveOverload && isTeamBAttackingForOverload)
+    );
+
+    if (shouldRenderOverloads) {
+      const overloadResult = gameStateStore.getOverloadAnalysisResult();
+      const cols = 80;
+      const rows = 48;
+      const cellW = 100 / cols;
+      const cellH = 60 / rows;
+
+      // Step A: Draw overload region enclosing rounded rectangles (Translucent Purple)
+      overloadResult.regions.forEach((reg) => {
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+
+        reg.cells.forEach((c) => {
+          const cx = c.col * cellW;
+          const cy = c.row * cellH;
+          if (cx < minX) minX = cx;
+          if (cx + cellW > maxX) maxX = cx + cellW;
+          if (cy < minY) minY = cy;
+          if (cy + cellH > maxY) maxY = cy + cellH;
+        });
+
+        // Convert coordinates to screen space
+        const screenMinX = toScreenX(minX);
+        const screenMaxX = toScreenX(maxX);
+        const screenMinY = toScreenY(minY);
+        const screenMaxY = toScreenY(maxY);
+
+        // Calculate layout with a small padding
+        let rectX = Math.min(screenMinX, screenMaxX);
+        let rectY = Math.min(screenMinY, screenMaxY);
+        let rectW = Math.abs(screenMaxX - screenMinX);
+        let rectH = Math.abs(screenMaxY - screenMinY);
+
+        // Add 6 pixels of padding
+        rectX -= 6;
+        rectY -= 6;
+        rectW += 12;
+        rectH += 12;
+
+        ctx.save();
+        ctx.fillStyle = "rgba(155, 89, 182, 0.22)";
+        ctx.strokeStyle = "rgba(155, 89, 182, 0.75)";
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = "rgba(155, 89, 182, 0.3)";
+        ctx.shadowBlur = 6;
+
+        ctx.beginPath();
+        ctx.roundRect(rectX, rectY, rectW, rectH, 10);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // Step B: Draw dotted connection lines and player role badges
+      overloadResult.regions.forEach((reg) => {
+        const repX = toScreenX(reg.representativePoint.x);
+        const repY = toScreenY(reg.representativePoint.y);
+
+        // Helper to draw dotted line
+        const drawDottedLine = (playerId: string) => {
+          const player = state.players.find(p => p.id === playerId);
+          if (!player) return;
+          const px = toScreenX(player.x);
+          const py = toScreenY(player.y);
+
+          ctx.save();
+          ctx.strokeStyle = "rgba(155, 89, 182, 0.85)";
+          ctx.lineWidth = 1.8;
+          ctx.setLineDash([4, 4]);
+          ctx.shadowColor = "rgba(0, 0, 0, 0.2)";
+          ctx.shadowBlur = 2;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 1;
+
+          ctx.beginPath();
+          ctx.moveTo(repX, repY);
+          ctx.lineTo(px, py);
+          ctx.stroke();
+          ctx.restore();
+        };
+
+        // Helper to draw badge above player
+        const drawPlayerBadge = (playerId: string, label: string, badgeColor: string) => {
+          const player = state.players.find(p => p.id === playerId);
+          if (!player) return;
+          const px = toScreenX(player.x);
+          const py = toScreenY(player.y);
+
+          ctx.save();
+          ctx.fillStyle = badgeColor;
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1;
+          ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+          ctx.shadowBlur = 3;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 2;
+
+          const radius = 8;
+          const bx = px;
+          const by = py - toScreenLength(2.2); // Position badge slightly above player
+
+          ctx.beginPath();
+          ctx.arc(bx, by, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 9px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.shadowColor = "transparent"; // reset shadow for text
+          ctx.fillText(label, bx, by);
+          ctx.restore();
+        };
+
+        // Draw connections
+        drawDottedLine(reg.primaryAttackerId);
+        drawDottedLine(reg.supportingAttackerId);
+        drawDottedLine(reg.primaryDefenderId);
+
+        // Draw role badges (Green for A1/A2, Red for D1)
+        drawPlayerBadge(reg.primaryAttackerId, "A1", "#2ecc71");
+        drawPlayerBadge(reg.supportingAttackerId, "A2", "#2ecc71");
+        drawPlayerBadge(reg.primaryDefenderId, "D1", "#e74c3c");
+      });
+    }
+
     // 2. Draw Pitch markings (Thin white crisp lines)
     ctx.strokeStyle = "#F5F5F5";
     ctx.lineWidth = Math.max(1.5, toScreenLength(0.22));
@@ -905,7 +1051,7 @@ export function PitchCanvas() {
     }
 
     ctx.restore();
-  }, [dimensions, state, editMode, selectedPlayerId, showZoneOfInfluence, showVulnerability, showPassingOptions, showOpponentPassingOptions, showAvailableRuns, showOpponentRuns]);
+  }, [dimensions, state, editMode, selectedPlayerId, showZoneOfInfluence, showVulnerability, showPassingOptions, showOpponentPassingOptions, showAvailableRuns, showOpponentRuns, showAttackingOverload, showDefensiveOverload]);
 
   // Pointer event handlers mapping screen space -> logical pitch space
   const handlePointerDown = (e: React.MouseEvent<HTMLCanvasElement>) => {

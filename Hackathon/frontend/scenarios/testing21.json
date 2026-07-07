@@ -55,8 +55,8 @@
       "team": "A",
       "goalkeeper": false,
       "referee": false,
-      "x": 31.61,
-      "y": 29.75,
+      "x": 41.81,
+      "y": 31.13,
       "heading_angle": 0,
       "jerseyNumber": "6"
     },
@@ -75,8 +75,8 @@
       "team": "A",
       "goalkeeper": false,
       "referee": false,
-      "x": 61.34,
-      "y": 11.11,
+      "x": 74.56,
+      "y": 21.56,
       "heading_angle": 129,
       "jerseyNumber": "11"
     },
@@ -85,8 +85,8 @@
       "team": "A",
       "goalkeeper": false,
       "referee": false,
-      "x": 47.73,
-      "y": 23.07,
+      "x": 52.9,
+      "y": 13.38,
       "heading_angle": 80,
       "jerseyNumber": "10"
     },
@@ -105,8 +105,8 @@
       "team": "A",
       "goalkeeper": false,
       "referee": false,
-      "x": 72.42,
-      "y": 30.76,
+      "x": 74.31,
+      "y": 30.5,
       "heading_angle": 43,
       "jerseyNumber": "9"
     },
@@ -135,8 +135,8 @@
       "team": "B",
       "goalkeeper": false,
       "referee": false,
-      "x": 76.2,
-      "y": 37.56,
+      "x": 75.44,
+      "y": 42.22,
       "heading_angle": 180,
       "jerseyNumber": "4"
     },
@@ -145,8 +145,8 @@
       "team": "B",
       "goalkeeper": false,
       "referee": false,
-      "x": 74.81,
-      "y": 22.57,
+      "x": 78.09,
+      "y": 26.22,
       "heading_angle": 180,
       "jerseyNumber": "5"
     },
@@ -165,8 +165,8 @@
       "team": "B",
       "goalkeeper": false,
       "referee": false,
-      "x": 58.56,
-      "y": 36.93,
+      "x": 51.76,
+      "y": 32.52,
       "heading_angle": 180,
       "jerseyNumber": "6"
     },
@@ -185,8 +185,8 @@
       "team": "B",
       "goalkeeper": false,
       "referee": false,
-      "x": 54.79,
-      "y": 24.21,
+      "x": 56.17,
+      "y": 23.95,
       "heading_angle": 133,
       "jerseyNumber": "10"
     },
@@ -222,8 +222,8 @@
     }
   ],
   "ball": {
-    "x": 33.41,
-    "y": 29.75,
-    "playerIdWhoHasPossession": "A_LDMC"
+    "x": 53.21,
+    "y": 15.15,
+    "playerIdWhoHasPossession": "A_CAM"
   }
 }
