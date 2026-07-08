@@ -149,6 +149,7 @@ class ExtractionConfig:
     touch_distance: float = 2.0
     touch_hysteresis_frames: int = 3
     min_touch_interval_seconds: float = 0.12
+    record_all_frames: bool = True
     max_frames: int | None = None
     output_dir: str | Path = "outputs/perception"
     output_json_path: str | Path | None = None

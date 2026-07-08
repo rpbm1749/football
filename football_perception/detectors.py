@@ -22,7 +22,7 @@ class _Tile:
 class UltralyticsYOLODetector:
     """YOLO adapter with optional pitch-region tiled inference."""
 
-    PERSON_NAMES = {"person", "player"}
+    PERSON_NAMES = {"person", "player", "goalkeeper", "referee"}
     BALL_NAMES = {"sports ball", "ball", "football", "soccer ball"}
 
     def __init__(
@@ -109,7 +109,29 @@ class UltralyticsYOLODetector:
         if self.visual_player_candidates:
             detections.extend(self._detect_visual_player_candidates(frame))
         detections = [detection for detection in detections if self._inside_pitch(detection.bbox.center)]
-        return _nms(detections, self.nms_iou_threshold)
+        detections = _nms(detections, self.nms_iou_threshold)
+        
+        # Smallest box ball heuristic: if there are multiple ball detections,
+        # keep only the smallest one as a ball, reclassify the rest as players
+        ball_detections = [d for d in detections if d.kind == ObjectKind.BALL]
+        if len(ball_detections) > 1:
+            smallest_ball = min(ball_detections, key=lambda d: d.bbox.width * d.bbox.height)
+            new_detections = []
+            for d in detections:
+                if d.kind == ObjectKind.BALL and d is not smallest_ball:
+                    new_detections.append(
+                        Detection(
+                            kind=ObjectKind.PLAYER,
+                            bbox=d.bbox,
+                            confidence=d.confidence,
+                            class_name="player",
+                        )
+                    )
+                else:
+                    new_detections.append(d)
+            detections = new_detections
+            
+        return detections
 
     def _detect_tile(self, frame, offset_x: int, offset_y: int) -> list[Detection]:
         predict_kwargs = {"conf": self.confidence, "verbose": False}
@@ -132,6 +154,13 @@ class UltralyticsYOLODetector:
             class_name = str(names.get(class_id, class_id)).lower()
             x1, y1, x2, y2 = [float(value) for value in box.xyxy[0]]
             bbox = BoundingBox(x1 + offset_x, y1 + offset_y, x2 + offset_x, y2 + offset_y)
+            
+            # Reclassify large ball detections as player candidates
+            if class_name in self.BALL_NAMES:
+                area = bbox.width * bbox.height
+                if bbox.width > 18.0 or bbox.height > 24.0 or area > 350.0:
+                    class_name = "player"
+            
             kind = self._kind_from_class(class_name, bbox)
             if kind is None:
                 continue

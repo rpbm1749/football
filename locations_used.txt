@@ -1,0 +1,23 @@
+===================================================================
+                   FOOTBALL PERCEPTION PIPELINE
+                       LOCATIONS USED
+===================================================================
+
+=== INPUT LOCATIONS ===
+Raw Video Data:
+  Path: data/vlc.mp4
+  Description: The input football match video clip to be processed.
+
+Model Weights:
+  Path: weights/player_detection_best.pt
+  Description: Custom fine-tuned YOLOv8 model weights trained on soccer objects.
+
+
+=== OUTPUT LOCATIONS ===
+Visualizer JSON:
+  Path: outputs/perception/1590.json
+  Description: The resulting game states sequence, matching the frontend's React/TypeScript visualizer schema.
+
+Debug Drawings:
+  Path: outputs/perception_debug/
+  Description: Contains diagnostics frames (e.g. frame 0, 30, 60) showing drawn player and ball detections for sanity checks.

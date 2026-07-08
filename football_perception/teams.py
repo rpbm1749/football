@@ -13,13 +13,21 @@ class JerseyColorTeamAssigner:
         self._color_samples: dict[int, list[np.ndarray]] = defaultdict(list)
         self._team_by_track: dict[int, Team] = {}
         self._special_by_track: dict[int, tuple[bool, bool]] = {}
+        self._class_counts: dict[int, Counter] = defaultdict(Counter)
 
     def observe(self, frame, tracked_players: list[TrackedDetection]) -> None:
         for player in tracked_players:
+            if player.class_name:
+                self._class_counts[player.track_id][player.class_name] += 1
+
             sample = _sample_jersey_color(frame, player)
             if sample is not None:
-                self._color_samples[player.track_id].append(sample)
-                self._color_samples[player.track_id] = self._color_samples[player.track_id][-30:]
+                # Exclude goalkeepers and referees from color samples to keep outfield clustering clean
+                counts = self._class_counts.get(player.track_id)
+                dominant_class = counts.most_common(1)[0][0] if counts else None
+                if dominant_class not in {"goalkeeper", "referee"}:
+                    self._color_samples[player.track_id].append(sample)
+                    self._color_samples[player.track_id] = self._color_samples[player.track_id][-30:]
 
     def assign(self, players: list[PlayerState]) -> list[PlayerState]:
         if not players:
@@ -27,13 +35,25 @@ class JerseyColorTeamAssigner:
 
         self._refresh_assignments(players)
         for player in players:
-            player.team = self._team_by_track.get(player.id, Team.UNKNOWN)
-            is_goalkeeper, is_referee = self._special_by_track.get(player.id, (False, False))
-            player.is_goalkeeper = is_goalkeeper
-            player.is_referee = is_referee
-            if is_referee:
+            # Determine dominant class to assign goalkeeper and referee flags
+            counts = self._class_counts.get(player.id)
+            if counts:
+                dominant_class = counts.most_common(1)[0][0]
+                player.is_goalkeeper = (dominant_class == "goalkeeper")
+                player.is_referee = (dominant_class == "referee")
+            else:
+                player.is_goalkeeper = False
+                player.is_referee = False
+
+            if player.is_referee:
                 player.team = Team.REFEREE
+            elif player.is_goalkeeper:
+                # Goalkeeper belongs to the team defending the half of the pitch they are positioned in
+                player.team = Team.LEFT if player.position.x < PITCH_LENGTH / 2 else Team.RIGHT
+            else:
+                player.team = self._team_by_track.get(player.id, Team.UNKNOWN)
         return players
+
 
     def _refresh_assignments(self, players: list[PlayerState]) -> None:
         color_by_id = {

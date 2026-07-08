@@ -47,26 +47,9 @@ class HomographyPitchMapper:
             return None
 
         height, width = frame.shape[:2]
-        line_polygon = _estimate_boundary_line_polygon(frame, cv2)
-        if line_polygon is not None:
-            self._pitch_polygon = line_polygon
-            return _homography_from_polygon(cv2, line_polygon, self.pitch_length, self.pitch_width)
-
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv, (35, 35, 35), (95, 255, 255))
-        kernel = np.ones((11, 11), np.uint8)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if not contours:
-            self._pitch_polygon = _layout_prior_polygon(width, height)
-            return _homography_from_polygon(cv2, self._pitch_polygon, self.pitch_length, self.pitch_width)
-
-        contour = max(contours, key=cv2.contourArea)
-        rect = cv2.minAreaRect(contour)
-        box = cv2.boxPoints(rect).astype(np.float32)
-        ordered = _order_corners(box)
-        self._pitch_polygon = ordered
-        return _homography_from_polygon(cv2, ordered, self.pitch_length, self.pitch_width)
+        # Hardbound stable prior boundary
+        self._pitch_polygon = _layout_prior_polygon(width, height)
+        return _homography_from_polygon(cv2, self._pitch_polygon, self.pitch_length, self.pitch_width)
 
     def pitch_polygon(self):
         return self._pitch_polygon
@@ -220,8 +203,8 @@ def _layout_prior_polygon(width: int, height: int) -> np.ndarray:
     return np.array(
         [
             [0.123 * width, 0.928 * height],
-            [0.891 * width, 0.928 * height],
-            [0.891 * width, 0.055 * height],
+            [0.877 * width, 0.928 * height],
+            [0.877 * width, 0.055 * height],
             [0.123 * width, 0.055 * height],
         ],
         dtype=np.float32,

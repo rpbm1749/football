@@ -13,7 +13,7 @@ function ensureScenariosDir() {
   }
 }
 
-function scenariosApiPlugin(geminiApiKey?: string) {
+  function scenariosApiPlugin(geminiApiKey?: string) {
   return {
     name: 'scenarios-api',
     configureServer(server: any) {

@@ -7,6 +7,7 @@ from pathlib import Path
 from .detectors import build_detector
 from .models import (
     BallState,
+    Detection,
     ExtractionConfig,
     FrameRef,
     GameState,
@@ -68,6 +69,10 @@ def extract_game_states(video_path: str | Path, config: ExtractionConfig | None 
     fitted_pitch = False
     frames_processed = 0
     valid_states = 0
+    last_known_ball = None
+    last_known_ball_pos = None
+    ball_miss_count = 0
+    possessing_player_id = None
 
     logger.info("Starting frame processing...")
     while True:
@@ -108,7 +113,20 @@ def extract_game_states(video_path: str | Path, config: ExtractionConfig | None 
             config,
         )
         tracked_balls = [item for item in tracked if item.kind == ObjectKind.BALL]
-        logger.debug(f"Frame {frame_number}: Tracked {len(tracked_players)} players, {len(tracked_balls)} balls")
+        
+        # Ball gating: filter out physically impossible ball detections
+        valid_tracked_balls = []
+        for b_det in tracked_balls:
+            ball_pos = pitch_mapper.image_to_pitch(b_det.bbox.center)
+            if last_known_ball_pos is not None:
+                dist = ((ball_pos.x - last_known_ball_pos.x)**2 + (ball_pos.y - last_known_ball_pos.y)**2)**0.5
+                max_allowed_dist = 3.0 * (ball_miss_count + 1)
+                if dist > max_allowed_dist:
+                    logger.debug(f"Frame {frame_number}: Rejected ball candidate at ({ball_pos.x:.1f}, {ball_pos.y:.1f}) - distance {dist:.1f}m > {max_allowed_dist:.1f}m")
+                    continue
+            valid_tracked_balls.append(b_det)
+            
+        logger.debug(f"Frame {frame_number}: Tracked {len(tracked_players)} players, {len(valid_tracked_balls)} balls after gating (raw {len(tracked_balls)})")
 
         team_assigner.observe(frame, tracked_players)
         players = _build_players(tracked_players, pitch_mapper, previous_positions, timestamp)
@@ -119,18 +137,63 @@ def extract_game_states(video_path: str | Path, config: ExtractionConfig | None 
         non_goalkeeper_players = [p for p in players if not p.is_goalkeeper]
         logger.debug(f"Frame {frame_number}: Built {len(non_goalkeeper_players)} regular players, {len(goalkeepers)} goalkeepers")
         
-        ball = _build_ball(tracked_balls, tracked_players, pitch_mapper, previous_positions, timestamp, config)
-        ball_status = "DETECTED" if ball is not None else "NOT DETECTED"
+        # Build ball from the valid filtered detections
+        ball = _build_ball(valid_tracked_balls, tracked_players, pitch_mapper, previous_positions, timestamp, config)
+        
+        if ball is not None:
+            last_known_ball_pos = ball.position
+            ball_miss_count = 0
+        else:
+            ball_miss_count += 1
+            # If ball is occluded/lost, try to lock to the player in possession
+            if possessing_player_id is not None:
+                poss_player = next((p for p in players if p.id == possessing_player_id), None)
+                if poss_player is not None:
+                    # Attach ball to the player holding possession
+                    ball = BallState(position=poss_player.position, velocity=Velocity(), id=-1)
+                    last_known_ball_pos = ball.position
+                    logger.debug(f"Frame {frame_number}: Ball occluded - attached to possessing Player {possessing_player_id}")
+            
+            # Static fallback if possession lock is unavailable
+            if ball is None:
+                if last_known_ball_pos is not None:
+                    ball = BallState(position=last_known_ball_pos, velocity=Velocity(), id=-1)
+                else:
+                    ball = BallState(position=Point(50.0, 30.0), velocity=Velocity(), id=-1)
+                logger.debug(f"Frame {frame_number}: Ball occluded - static fallback to ({ball.position.x:.1f}, {ball.position.y:.1f})")
+                
+        ball_status = "DETECTED" if ball is not None and ball.id != -1 else "OCCLUDED/PROPAGATED"
         logger.debug(f"Frame {frame_number}: Ball {ball_status}")
+        
+        # Update possession
+        if ball is not None and players:
+            # Find the nearest player to the ball
+            nearest_player = None
+            min_dist = float('inf')
+            for p in players:
+                # Exclude referee from possession
+                if p.is_referee:
+                    continue
+                dist = ((p.position.x - ball.position.x)**2 + (p.position.y - ball.position.y)**2)**0.5
+                if dist < min_dist:
+                    min_dist = dist
+                    nearest_player = p
+            
+            if nearest_player is not None:
+                if min_dist < 2.0:
+                    possessing_player_id = nearest_player.id
+                elif possessing_player_id is not None and min_dist > 3.5:
+                    possessing_player_id = None
         
         event = touch_detector.update(timestamp, players, ball)
         
-        if event is None:
-            logger.debug(f"Frame {frame_number}: Skipped - no touch event detected")
-            continue
-        if ball is None:
-            logger.debug(f"Frame {frame_number}: Skipped - ball is None")
-            continue
+        if not config.record_all_frames:
+            if event is None:
+                logger.debug(f"Frame {frame_number}: Skipped - no touch event detected")
+                continue
+            if ball is None:
+                logger.debug(f"Frame {frame_number}: Skipped - ball is None")
+                continue
         
         valid_states += 1
         frame_ref = _build_frame_ref(cv2, video_path, frame, frame_number, output_dir, config.save_frame_images)
@@ -139,7 +202,7 @@ def extract_game_states(video_path: str | Path, config: ExtractionConfig | None 
                 timestamp=timestamp,
                 frame_number=frame_number,
                 frame_image=frame.copy(),
-                touching_player=event.player_id,
+                touching_player=event.player_id if event is not None else None,
                 ball=ball,
                 players=players,
                 frame_ref=frame_ref,
@@ -148,6 +211,24 @@ def extract_game_states(video_path: str | Path, config: ExtractionConfig | None 
 
     capture.release()
     logger.info(f"Frame processing complete. Processed {frames_processed} frames, found {valid_states} valid game states.")
+    
+    # Linearly interpolate player track gaps to prevent player dropouts
+    _interpolate_player_tracks(states, max_gap_frames=60)
+    
+    # Retroactively assign teams/roles using the complete tracking history
+    for state in states:
+        for player in state.players:
+            counts = team_assigner._class_counts.get(player.id)
+            if counts:
+                dominant_class = counts.most_common(1)[0][0]
+                player.is_goalkeeper = (dominant_class == "goalkeeper")
+                player.is_referee = (dominant_class == "referee")
+            if player.is_referee:
+                player.team = Team.REFEREE
+            elif player.is_goalkeeper:
+                player.team = Team.LEFT if player.position.x < (PITCH_LENGTH / 2) else Team.RIGHT
+            else:
+                player.team = team_assigner._team_by_track.get(player.id, Team.UNKNOWN)
     
     output_json = Path(config.output_json_path) if config.output_json_path else output_dir / f"{video_path.stem}.game_states.json"
     logger.info(f"Saving {len(states)} game states to {output_json}")
@@ -190,7 +271,7 @@ def _build_ball(
     timestamp: float,
     config: ExtractionConfig,
 ) -> BallState | None:
-    tracked = _select_ball_track(tracked_balls, tracked_players, config)
+    tracked = _select_ball_track(tracked_balls, tracked_players, config, pitch_mapper)
     if tracked is None:
         return None
     position = pitch_mapper.image_to_pitch(tracked.bbox.center)
@@ -218,6 +299,7 @@ def _select_ball_track(
     tracked_balls: list[TrackedDetection],
     tracked_players: list[TrackedDetection],
     config: ExtractionConfig,
+    pitch_mapper,
 ) -> TrackedDetection | None:
     plausible = [
         ball
@@ -226,7 +308,25 @@ def _select_ball_track(
     ]
     if not plausible:
         return None
-    return max(plausible, key=lambda item: item.confidence)
+    if not tracked_players:
+        return max(plausible, key=lambda item: item.confidence)
+        
+    scored_balls = []
+    for ball in plausible:
+        ball_pos = pitch_mapper.image_to_pitch(ball.bbox.center)
+        min_dist = float('inf')
+        for player in tracked_players:
+            player_pos = pitch_mapper.image_to_pitch(player.bbox.foot_point)
+            dist = ((player_pos.x - ball_pos.x)**2 + (player_pos.y - ball_pos.y)**2)**0.5
+            if dist < min_dist:
+                min_dist = dist
+        
+        # Penalize ball tracks that are far away from players to filter out static false positives
+        proximity_factor = 1.0 / (1.0 + min_dist / 3.0)
+        score = ball.confidence * proximity_factor
+        scored_balls.append((score, ball))
+        
+    return max(scored_balls, key=lambda item: item[0])[1]
 
 
 def _is_plausible_ball(
@@ -318,3 +418,67 @@ def _require_cv2():
             "OpenCV is required to read videos. Install dependencies from requirements-perception.txt."
         ) from exc
     return cv2
+
+
+def _interpolate_player_tracks(states: list[GameState], max_gap_frames: int = 60) -> None:
+    from collections import defaultdict
+    player_obs = defaultdict(list)
+    for idx, state in enumerate(states):
+        for player in state.players:
+            player_obs[player.id].append((idx, player))
+            
+    for pid in player_obs:
+        player_obs[pid].sort(key=lambda x: x[0])
+        
+    # Identify static false-positive tracks (e.g. penalty spots, pitch markings)
+    static_tracks = set()
+    for pid, obs in player_obs.items():
+        if len(obs) >= 30:
+            xs = [o[1].position.x for o in obs]
+            ys = [o[1].position.y for o in obs]
+            max_disp = ((max(xs) - min(xs))**2 + (max(ys) - min(ys))**2)**0.5
+            if max_disp < 0.15:
+                static_tracks.add(pid)
+                
+    if static_tracks:
+        logger.info(f"Filtering out static false-positive tracks (penalty spots/pitch markings): {static_tracks}")
+        for state in states:
+            state.players = [p for p in state.players if p.id not in static_tracks]
+        for pid in static_tracks:
+            player_obs.pop(pid, None)
+        
+    for pid, obs in player_obs.items():
+        if len(obs) < 2:
+            continue
+            
+        for i in range(len(obs) - 1):
+            idx1, p1 = obs[i]
+            idx2, p2 = obs[i+1]
+            gap = idx2 - idx1
+            if 1 < gap <= max_gap_frames:
+                for step in range(1, gap):
+                    idx = idx1 + step
+                    t = step / gap
+                    
+                    interp_x = p1.position.x + t * (p2.position.x - p1.position.x)
+                    interp_y = p1.position.y + t * (p2.position.y - p1.position.y)
+                    
+                    dt = states[idx].timestamp - states[idx-1].timestamp
+                    if dt <= 0:
+                        dt = 0.04
+                    vel_x = (p2.position.x - p1.position.x) / ((idx2 - idx1) * dt)
+                    vel_y = (p2.position.y - p1.position.y) / ((idx2 - idx1) * dt)
+                    
+                    from .models import PlayerState, Point, Velocity, Team
+                    interp_player = PlayerState(
+                        id=pid,
+                        team=Team.UNKNOWN,
+                        is_goalkeeper=False,
+                        is_referee=False,
+                        position=Point(interp_x, interp_y),
+                        velocity=Velocity(vel_x, vel_y),
+                        movement_direction=_movement_direction(Velocity(vel_x, vel_y)),
+                        heading_angle=p1.heading_angle,
+                    )
+                    interp_player.heading_angle = _heading_angle(interp_player.movement_direction)
+                    states[idx].players.append(interp_player)
