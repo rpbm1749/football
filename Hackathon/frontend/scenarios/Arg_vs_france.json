@@ -1,0 +1,2537 @@
+{
+  "type": "ScenarioSequence",
+  "id": "seq_1783494624251",
+  "name": "ArgentinaVsFrance",
+  "boards": [
+    {
+      "name": "State 1",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.02,
+          "y": 27.61,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 14.61,
+          "y": 8.84,
+          "heading_angle": 141,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 10.96,
+          "y": 27.48,
+          "heading_angle": 257,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.02,
+          "y": 41.34,
+          "heading_angle": 194,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 33.88,
+          "y": 52.42,
+          "heading_angle": 257,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 10.45,
+          "y": 6.45,
+          "heading_angle": 103,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 17.51,
+          "y": 19.67,
+          "heading_angle": 195,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 6.05,
+          "y": 7.08,
+          "heading_angle": 105,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 51.89,
+          "y": 25.97,
+          "heading_angle": 150,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 23.68,
+          "y": 31.64,
+          "heading_angle": 187,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 29.47,
+          "y": 15.01,
+          "heading_angle": 144,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 95,
+          "y": 30,
+          "heading_angle": 180,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 45.59,
+          "y": 39.32,
+          "heading_angle": 180,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 48.61,
+          "y": 24.84,
+          "heading_angle": 180,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 40.05,
+          "y": 4.43,
+          "heading_angle": 180,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 21.03,
+          "y": 10.6,
+          "heading_angle": 151,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 23.8,
+          "y": 23.45,
+          "heading_angle": 180,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 37.91,
+          "y": 28.49,
+          "heading_angle": 180,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 14.74,
+          "y": 4.81,
+          "heading_angle": 139,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 27.2,
+          "y": 41.46,
+          "heading_angle": 180,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 4.28,
+          "y": 6.57,
+          "heading_angle": 107,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 15.11,
+          "y": 29.5,
+          "heading_angle": 180,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 3.75,
+        "y": 8.29,
+        "playerIdWhoHasPossession": "B_RW"
+      }
+    },
+    {
+      "name": "State 2",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.02,
+          "y": 27.61,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 13.1,
+          "y": 13.25,
+          "heading_angle": 141,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 10.96,
+          "y": 27.48,
+          "heading_angle": 257,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 12.97,
+          "y": 39.45,
+          "heading_angle": 194,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 36.15,
+          "y": 52.92,
+          "heading_angle": 257,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 6.05,
+          "y": 14.76,
+          "heading_angle": 103,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 11.59,
+          "y": 20.43,
+          "heading_angle": 195,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 4.91,
+          "y": 9.72,
+          "heading_angle": 105,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 51.76,
+          "y": 26.6,
+          "heading_angle": 150,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 23.68,
+          "y": 31.64,
+          "heading_angle": 187,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 29.47,
+          "y": 15.01,
+          "heading_angle": 144,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 95,
+          "y": 30,
+          "heading_angle": 180,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 45.84,
+          "y": 40.2,
+          "heading_angle": 180,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 48.61,
+          "y": 24.84,
+          "heading_angle": 180,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 40.05,
+          "y": 4.43,
+          "heading_angle": 180,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 20.28,
+          "y": 10.23,
+          "heading_angle": 151,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 23.93,
+          "y": 22.44,
+          "heading_angle": 180,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 34.76,
+          "y": 27.36,
+          "heading_angle": 180,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 11.71,
+          "y": 6.83,
+          "heading_angle": 113,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.14,
+          "y": 37.81,
+          "heading_angle": 180,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 3.15,
+          "y": 11.86,
+          "heading_angle": 67,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 15.11,
+          "y": 29.5,
+          "heading_angle": 180,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 5.65,
+        "y": 16.51,
+        "playerIdWhoHasPossession": "A_LDMC"
+      }
+    },
+    {
+      "name": "State 3",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.77,
+          "y": 26.6,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 10.96,
+          "y": 15.52,
+          "heading_angle": 141,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 9.82,
+          "y": 29.37,
+          "heading_angle": 257,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 12.22,
+          "y": 38.31,
+          "heading_angle": 309,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 33,
+          "y": 50.91,
+          "heading_angle": 257,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 3.27,
+          "y": 17.15,
+          "heading_angle": 65,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 8.19,
+          "y": 21.06,
+          "heading_angle": 47,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 6.17,
+          "y": 10.98,
+          "heading_angle": 31,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 52.39,
+          "y": 24.21,
+          "heading_angle": 150,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 21.16,
+          "y": 27.86,
+          "heading_angle": 187,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 26.07,
+          "y": 14.38,
+          "heading_angle": 109,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 95,
+          "y": 30,
+          "heading_angle": 180,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 43.45,
+          "y": 41.21,
+          "heading_angle": 180,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 48.61,
+          "y": 24.84,
+          "heading_angle": 180,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 38.92,
+          "y": 11.49,
+          "heading_angle": 180,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.02,
+          "y": 11.86,
+          "heading_angle": 121,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 22.42,
+          "y": 22.82,
+          "heading_angle": 180,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 32.24,
+          "y": 24.71,
+          "heading_angle": 180,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 12.34,
+          "y": 10.23,
+          "heading_angle": 75,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 16.25,
+          "y": 38.06,
+          "heading_angle": 208,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 6.8,
+          "y": 16.4,
+          "heading_angle": 67,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 14.11,
+          "y": 27.61,
+          "heading_angle": 180,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 3.21,
+        "y": 24.85,
+        "playerIdWhoHasPossession": "A_GK"
+      }
+    },
+    {
+      "name": "State 4",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.77,
+          "y": 26.6,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 18.26,
+          "y": 15.89,
+          "heading_angle": 321,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 17.13,
+          "y": 27.73,
+          "heading_angle": 338,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 17,
+          "y": 36.55,
+          "heading_angle": 309,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 33,
+          "y": 50.91,
+          "heading_angle": 257,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 14.99,
+          "y": 14.01,
+          "heading_angle": 329,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 15.24,
+          "y": 21.56,
+          "heading_angle": 31,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 14.99,
+          "y": 17.66,
+          "heading_angle": 328,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 47.98,
+          "y": 20.68,
+          "heading_angle": 241,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 26.83,
+          "y": 25.59,
+          "heading_angle": 331,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 36.65,
+          "y": 8.59,
+          "heading_angle": 302,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 95,
+          "y": 30,
+          "heading_angle": 180,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 44.58,
+          "y": 40.58,
+          "heading_angle": 241,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 52.52,
+          "y": 21.44,
+          "heading_angle": 180,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 42.19,
+          "y": 4.94,
+          "heading_angle": 157,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 24.69,
+          "y": 15.52,
+          "heading_angle": 328,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 21.79,
+          "y": 22.95,
+          "heading_angle": 323,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 36.15,
+          "y": 21.69,
+          "heading_angle": 332,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.27,
+          "y": 11.49,
+          "heading_angle": 338,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 16.25,
+          "y": 37.93,
+          "heading_angle": 353,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 9.57,
+          "y": 15.89,
+          "heading_angle": 67,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 14.86,
+          "y": 28.49,
+          "heading_angle": 36,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 40.53,
+        "y": 5.64,
+        "playerIdWhoHasPossession": "B_RCB"
+      }
+    },
+    {
+      "name": "State 5",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.77,
+          "y": 26.6,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 17.76,
+          "y": 9.09,
+          "heading_angle": 321,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.02,
+          "y": 27.98,
+          "heading_angle": 338,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.02,
+          "y": 37.43,
+          "heading_angle": 309,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 38.41,
+          "y": 51.79,
+          "heading_angle": 338,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 27.46,
+          "y": 10.48,
+          "heading_angle": 329,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.27,
+          "y": 19.42,
+          "heading_angle": 31,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 17.63,
+          "y": 15.52,
+          "heading_angle": 328,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 47.98,
+          "y": 20.68,
+          "heading_angle": 241,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 31.74,
+          "y": 21.31,
+          "heading_angle": 331,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 39.29,
+          "y": 3.43,
+          "heading_angle": 298,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 95,
+          "y": 30,
+          "heading_angle": 180,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 45.21,
+          "y": 40.83,
+          "heading_angle": 241,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 52.52,
+          "y": 21.44,
+          "heading_angle": 180,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 40.81,
+          "y": 1.66,
+          "heading_angle": 192,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 29.22,
+          "y": 13.38,
+          "heading_angle": 328,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 25.69,
+          "y": 22.32,
+          "heading_angle": 323,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 40.3,
+          "y": 20.93,
+          "heading_angle": 332,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 27.46,
+          "y": 7.58,
+          "heading_angle": 338,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 16.12,
+          "y": 38.06,
+          "heading_angle": 353,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 14.48,
+          "y": 17.53,
+          "heading_angle": 349,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 16.5,
+          "y": 28.24,
+          "heading_angle": 36,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 39.05,
+        "y": 1.29,
+        "playerIdWhoHasPossession": "B_RCB"
+      }
+    },
+    {
+      "name": "State 6",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.77,
+          "y": 26.6,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.14,
+          "y": 7.2,
+          "heading_angle": 321,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 18.89,
+          "y": 27.23,
+          "heading_angle": 338,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.65,
+          "y": 37.05,
+          "heading_angle": 309,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 42.57,
+          "y": 51.28,
+          "heading_angle": 254,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 31.61,
+          "y": 6.2,
+          "heading_angle": 151,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 20.28,
+          "y": 20.43,
+          "heading_angle": 311,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.14,
+          "y": 15.64,
+          "heading_angle": 309,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 47.86,
+          "y": 17.66,
+          "heading_angle": 241,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 31.99,
+          "y": 19.8,
+          "heading_angle": 257,
+          "jerseyNumber": "20"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 39.29,
+          "y": 3.43,
+          "heading_angle": 298,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 95,
+          "y": 30,
+          "heading_angle": 180,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 47.48,
+          "y": 40.58,
+          "heading_angle": 241,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 52.52,
+          "y": 21.44,
+          "heading_angle": 180,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 40.81,
+          "y": 1.66,
+          "heading_angle": 192,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 34.26,
+          "y": 7.96,
+          "heading_angle": 164,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 22.8,
+          "y": 19.17,
+          "heading_angle": 323,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 41.69,
+          "y": 20.55,
+          "heading_angle": 332,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 30.23,
+          "y": 5.06,
+          "heading_angle": 171,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 17.63,
+          "y": 38.56,
+          "heading_angle": 338.9,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 16.75,
+          "y": 17.66,
+          "heading_angle": 349,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 21.79,
+          "y": 27.36,
+          "heading_angle": 334,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 20.54,
+        "y": 6.07,
+        "playerIdWhoHasPossession": "A_LB"
+      }
+    },
+    {
+      "name": "State 7",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.77,
+          "y": 26.6,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 20.78,
+          "y": 7.71,
+          "heading_angle": 321,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.65,
+          "y": 26.98,
+          "heading_angle": 338,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.65,
+          "y": 37.05,
+          "heading_angle": 309,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 42.57,
+          "y": 51.28,
+          "heading_angle": 254,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 31.61,
+          "y": 6.2,
+          "heading_angle": 80,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 23.17,
+          "y": 18.41,
+          "heading_angle": 311,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.77,
+          "y": 15.52,
+          "heading_angle": 309,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 45.09,
+          "y": 15.89,
+          "heading_angle": 241,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 32.12,
+          "y": 19.04,
+          "heading_angle": 257,
+          "jerseyNumber": "20"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 41.81,
+          "y": 2.8,
+          "heading_angle": 359,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 95,
+          "y": 30,
+          "heading_angle": 180,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 47.48,
+          "y": 40.58,
+          "heading_angle": 241,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 51.01,
+          "y": 16.15,
+          "heading_angle": 180,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 42.95,
+          "y": 6.2,
+          "heading_angle": 92,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 34.89,
+          "y": 7.96,
+          "heading_angle": 49,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 25.69,
+          "y": 17.53,
+          "heading_angle": 323,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 37.03,
+          "y": 19.92,
+          "heading_angle": 190,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 30.23,
+          "y": 5.06,
+          "heading_angle": 359,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 22.04,
+          "y": 38.56,
+          "heading_angle": 338.9,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 18.01,
+          "y": 16.9,
+          "heading_angle": 349,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 22.92,
+          "y": 27.98,
+          "heading_angle": 334,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 31.72,
+        "y": 17.29,
+        "playerIdWhoHasPossession": "A_RAM"
+      }
+    },
+    {
+      "name": "State 8",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.77,
+          "y": 26.6,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 20.78,
+          "y": 7.71,
+          "heading_angle": 321,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.65,
+          "y": 26.98,
+          "heading_angle": 338,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.65,
+          "y": 37.05,
+          "heading_angle": 309,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 43.32,
+          "y": 51.16,
+          "heading_angle": 354,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 31.61,
+          "y": 6.2,
+          "heading_angle": 80,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 23.17,
+          "y": 18.41,
+          "heading_angle": 311,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.77,
+          "y": 15.52,
+          "heading_angle": 309,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 44.58,
+          "y": 14.38,
+          "heading_angle": 241,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 38.04,
+          "y": 22.44,
+          "heading_angle": 16,
+          "jerseyNumber": "20"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 45.72,
+          "y": 3.3,
+          "heading_angle": 359,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 95,
+          "y": 30,
+          "heading_angle": 180,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 47.73,
+          "y": 40.58,
+          "heading_angle": 241,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 48.99,
+          "y": 14.13,
+          "heading_angle": 180,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 43.2,
+          "y": 8.09,
+          "heading_angle": 92,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 34.89,
+          "y": 7.96,
+          "heading_angle": 49,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 30.48,
+          "y": 17.41,
+          "heading_angle": 323,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 38.16,
+          "y": 19.04,
+          "heading_angle": 321,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 30.23,
+          "y": 5.06,
+          "heading_angle": 359,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 22.04,
+          "y": 38.56,
+          "heading_angle": 338.9,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 18.01,
+          "y": 16.9,
+          "heading_angle": 349,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 22.92,
+          "y": 27.98,
+          "heading_angle": 334,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 43.71,
+        "y": 12.81,
+        "playerIdWhoHasPossession": "A_CAM"
+      }
+    },
+    {
+      "name": "State 9",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.77,
+          "y": 26.6,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 20.78,
+          "y": 7.71,
+          "heading_angle": 321,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.65,
+          "y": 26.98,
+          "heading_angle": 338,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.65,
+          "y": 37.05,
+          "heading_angle": 309,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 43.32,
+          "y": 51.16,
+          "heading_angle": 354,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 28.84,
+          "y": 7.96,
+          "heading_angle": 56,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 23.17,
+          "y": 18.41,
+          "heading_angle": 311,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 19.77,
+          "y": 15.52,
+          "heading_angle": 309,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 44.58,
+          "y": 14.38,
+          "heading_angle": 241,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 38.66,
+          "y": 22.19,
+          "heading_angle": 16,
+          "jerseyNumber": "20"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 45.72,
+          "y": 3.3,
+          "heading_angle": 359,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 95,
+          "y": 30,
+          "heading_angle": 180,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 47.73,
+          "y": 40.58,
+          "heading_angle": 241,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 48.99,
+          "y": 14.13,
+          "heading_angle": 180,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 43.7,
+          "y": 9.6,
+          "heading_angle": 92,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 36.02,
+          "y": 10.23,
+          "heading_angle": 11,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 30.48,
+          "y": 17.41,
+          "heading_angle": 323,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 38.54,
+          "y": 18.66,
+          "heading_angle": 321,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 34.63,
+          "y": 3.17,
+          "heading_angle": 359,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 22.04,
+          "y": 38.56,
+          "heading_angle": 338.9,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 18.01,
+          "y": 16.9,
+          "heading_angle": 349,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 22.92,
+          "y": 27.98,
+          "heading_angle": 334,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 43.71,
+        "y": 12.81,
+        "playerIdWhoHasPossession": "A_CAM"
+      }
+    },
+    {
+      "name": "State 10",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.77,
+          "y": 26.6,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 23.93,
+          "y": 5.57,
+          "heading_angle": 321,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 23.05,
+          "y": 27.61,
+          "heading_angle": 338,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 22.67,
+          "y": 39.07,
+          "heading_angle": 309,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 51.01,
+          "y": 47.25,
+          "heading_angle": 354,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 28.84,
+          "y": 7.96,
+          "heading_angle": 56,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 29.35,
+          "y": 22.32,
+          "heading_angle": 311,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 23.3,
+          "y": 16.52,
+          "heading_angle": 309,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 45.09,
+          "y": 14.51,
+          "heading_angle": 359,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 51.01,
+          "y": 19.92,
+          "heading_angle": 16,
+          "jerseyNumber": "20"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 52.14,
+          "y": 3.43,
+          "heading_angle": 359,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 89.8,
+          "y": 22.44,
+          "heading_angle": 215,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 53.9,
+          "y": 34.66,
+          "heading_angle": 338,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 51.89,
+          "y": 6.83,
+          "heading_angle": 295,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 47.48,
+          "y": 11.23,
+          "heading_angle": 2,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 42.19,
+          "y": 14.76,
+          "heading_angle": 11,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 33.63,
+          "y": 16.78,
+          "heading_angle": 323,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 47.73,
+          "y": 18.92,
+          "heading_angle": 321,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 49.24,
+          "y": 5.31,
+          "heading_angle": 359,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 25.94,
+          "y": 40.96,
+          "heading_angle": 338.9,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 20.65,
+          "y": 13.12,
+          "heading_angle": 349,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 21.03,
+          "y": 29.62,
+          "heading_angle": 334,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 53.94,
+        "y": 3.4,
+        "playerIdWhoHasPossession": "A_ST"
+      }
+    },
+    {
+      "name": "State 11",
+      "players": [
+        {
+          "id": "A_GK",
+          "team": "A",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 2.77,
+          "y": 26.6,
+          "heading_angle": 284,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "A_LB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 45.84,
+          "y": 3.43,
+          "heading_angle": 321,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "A_LCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 40.05,
+          "y": 29.37,
+          "heading_angle": 338,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "A_RCB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 35.14,
+          "y": 38.44,
+          "heading_angle": 309,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "A_RB",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 79.72,
+          "y": 37.68,
+          "heading_angle": 354,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "A_LDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 46.73,
+          "y": 9.72,
+          "heading_angle": 56,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "A_RDMC",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 45.84,
+          "y": 24.96,
+          "heading_angle": 35,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "A_LAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 38.54,
+          "y": 17.28,
+          "heading_angle": 309,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "A_CAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 64.99,
+          "y": 18.66,
+          "heading_angle": 359,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "A_RAM",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 80.35,
+          "y": 20.05,
+          "heading_angle": 16,
+          "jerseyNumber": "20"
+        },
+        {
+          "id": "A_ST",
+          "team": "A",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 61.96,
+          "y": 20.55,
+          "heading_angle": 35,
+          "jerseyNumber": "9"
+        },
+        {
+          "id": "B_GK",
+          "team": "B",
+          "goalkeeper": true,
+          "referee": false,
+          "x": 98.11,
+          "y": 27.23,
+          "heading_angle": 195,
+          "jerseyNumber": "1"
+        },
+        {
+          "id": "B_LB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 79.6,
+          "y": 23.07,
+          "heading_angle": 338,
+          "jerseyNumber": "3"
+        },
+        {
+          "id": "B_LCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 74.06,
+          "y": 12.75,
+          "heading_angle": 27,
+          "jerseyNumber": "4"
+        },
+        {
+          "id": "B_RCB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 75.06,
+          "y": 17.66,
+          "heading_angle": 2,
+          "jerseyNumber": "5"
+        },
+        {
+          "id": "B_RB",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 57.18,
+          "y": 11.36,
+          "heading_angle": 11,
+          "jerseyNumber": "2"
+        },
+        {
+          "id": "B_CDM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 54.28,
+          "y": 19.8,
+          "heading_angle": 42,
+          "jerseyNumber": "6"
+        },
+        {
+          "id": "B_LCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 74.94,
+          "y": 25.09,
+          "heading_angle": 24,
+          "jerseyNumber": "8"
+        },
+        {
+          "id": "B_RCM",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 68.26,
+          "y": 8.34,
+          "heading_angle": 359,
+          "jerseyNumber": "10"
+        },
+        {
+          "id": "B_LW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 36.9,
+          "y": 41.46,
+          "heading_angle": 338.9,
+          "jerseyNumber": "11"
+        },
+        {
+          "id": "B_RW",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 27.08,
+          "y": 11.99,
+          "heading_angle": 349,
+          "jerseyNumber": "7"
+        },
+        {
+          "id": "B_ST",
+          "team": "B",
+          "goalkeeper": false,
+          "referee": false,
+          "x": 31.23,
+          "y": 28.61,
+          "heading_angle": 334,
+          "jerseyNumber": "9"
+        }
+      ],
+      "ball": {
+        "x": 82.08,
+        "y": 20.55,
+        "playerIdWhoHasPossession": "A_RAM"
+      }
+    }
+  ]
+}

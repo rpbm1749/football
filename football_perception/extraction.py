@@ -73,6 +73,40 @@ def extract_game_states(video_path: str | Path, config: ExtractionConfig | None 
     last_known_ball_pos = None
     ball_miss_count = 0
     possessing_player_id = None
+    
+    # Pre-pass to find static ball spots (e.g. penalty spots, pitch markings)
+    logger.info("Running pre-pass on first 50 frames to identify static ball markings...")
+    static_ball_spots = []
+    ball_detections_history = []
+    
+    pre_cap = cv2.VideoCapture(str(video_path))
+    if pre_cap.isOpened():
+        for _ in range(50):
+            ok, f_frame = pre_cap.read()
+            if not ok:
+                break
+            if not fitted_pitch:
+                pitch_mapper.fit(f_frame)
+                fitted_pitch = True
+                if hasattr(detector, "set_pitch_bbox") and hasattr(pitch_mapper, "pitch_bbox"):
+                    detector.set_pitch_bbox(pitch_mapper.pitch_bbox())
+                if hasattr(detector, "set_pitch_polygon") and hasattr(pitch_mapper, "pitch_polygon"):
+                    detector.set_pitch_polygon(pitch_mapper.pitch_polygon())
+            
+            f_dets = detector.detect(f_frame)
+            f_dets = _filter_detections_to_pitch(f_dets, pitch_mapper)
+            for d in f_dets:
+                if d.kind == ObjectKind.BALL:
+                    ball_pos = pitch_mapper.image_to_pitch(d.bbox.center)
+                    ball_detections_history.append(ball_pos)
+        pre_cap.release()
+        
+    for p in ball_detections_history:
+        neighbors = [n for n in ball_detections_history if ((n.x - p.x)**2 + (n.y - p.y)**2)**0.5 < 0.5]
+        if len(neighbors) >= 15:
+            if not any(((s.x - p.x)**2 + (s.y - p.y)**2)**0.5 < 0.5 for s in static_ball_spots):
+                static_ball_spots.append(p)
+                logger.info(f"Identified static ball spot (penalty spot/marking) at: ({p.x:.2f}, {p.y:.2f})")
 
     logger.info("Starting frame processing...")
     while True:
@@ -114,10 +148,16 @@ def extract_game_states(video_path: str | Path, config: ExtractionConfig | None 
         )
         tracked_balls = [item for item in tracked if item.kind == ObjectKind.BALL]
         
-        # Ball gating: filter out physically impossible ball detections
+        # Ball gating: filter out physically impossible ball detections and static markings
         valid_tracked_balls = []
         for b_det in tracked_balls:
             ball_pos = pitch_mapper.image_to_pitch(b_det.bbox.center)
+            
+            # Filter out static spots (penalty spots/logos)
+            if any(((ball_pos.x - s.x)**2 + (ball_pos.y - s.y)**2)**0.5 < 1.2 for s in static_ball_spots):
+                logger.debug(f"Frame {frame_number}: Rejected ball candidate at ({ball_pos.x:.1f}, {ball_pos.y:.1f}) - too close to static marking")
+                continue
+                
             if last_known_ball_pos is not None:
                 dist = ((ball_pos.x - last_known_ball_pos.x)**2 + (ball_pos.y - last_known_ball_pos.y)**2)**0.5
                 max_allowed_dist = 3.0 * (ball_miss_count + 1)
@@ -422,6 +462,7 @@ def _require_cv2():
 
 def _interpolate_player_tracks(states: list[GameState], max_gap_frames: int = 60) -> None:
     from collections import defaultdict
+    import copy
     player_obs = defaultdict(list)
     for idx, state in enumerate(states):
         for player in state.players:
@@ -446,16 +487,45 @@ def _interpolate_player_tracks(states: list[GameState], max_gap_frames: int = 60
             state.players = [p for p in state.players if p.id not in static_tracks]
         for pid in static_tracks:
             player_obs.pop(pid, None)
-        
-    for pid, obs in player_obs.items():
-        if len(obs) < 2:
-            continue
             
+    # Select the top 22 player tracks with the most detections
+    top_22_ids = sorted(player_obs.keys(), key=lambda pid: len(player_obs[pid]), reverse=True)[:22]
+    top_22_set = set(top_22_ids)
+    
+    # Filter states to only contain these top 22 players
+    for state in states:
+        state.players = [p for p in state.players if p.id in top_22_set]
+        
+    # Propagate the top 22 players to cover ALL frames
+    num_frames = len(states)
+    for pid in top_22_ids:
+        obs = player_obs[pid]
+        obs_indices = [o[0] for o in obs]
+        first_idx = obs_indices[0]
+        last_idx = obs_indices[-1]
+        
+        # 1. Fill backward from first_idx to 0
+        p_first = obs[0][1]
+        for idx in range(0, first_idx):
+            from .models import Velocity
+            p_copy = copy.copy(p_first)
+            p_copy.velocity = Velocity(0.0, 0.0)
+            states[idx].players.append(p_copy)
+            
+        # 2. Fill forward from last_idx to num_frames - 1
+        p_last = obs[-1][1]
+        for idx in range(last_idx + 1, num_frames):
+            from .models import Velocity
+            p_copy = copy.copy(p_last)
+            p_copy.velocity = Velocity(0.0, 0.0)
+            states[idx].players.append(p_copy)
+            
+        # 3. Fill intermediate gaps using linear interpolation
         for i in range(len(obs) - 1):
             idx1, p1 = obs[i]
             idx2, p2 = obs[i+1]
             gap = idx2 - idx1
-            if 1 < gap <= max_gap_frames:
+            if gap > 1:
                 for step in range(1, gap):
                     idx = idx1 + step
                     t = step / gap

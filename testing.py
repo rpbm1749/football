@@ -22,7 +22,7 @@ config = ExtractionConfig(
 )
 
 try:
-    game_states = extract_game_states("data/vlc.mp4", config)
+    game_states = extract_game_states("data/vlc1.mp4", config)
     logger.info(f"Extraction completed successfully! Generated {len(game_states)} game states.")
     for i, state in enumerate(game_states[:5]):
         logger.info(f"  State {i}: timestamp={state.timestamp:.2f}s, frame={state.frame_number}, players={len(state.players)}, ball={'present' if state.ball else 'absent'}")
