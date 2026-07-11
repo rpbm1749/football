@@ -506,6 +506,51 @@ export class GameStateStore {
       }
     }
 
+    // Pre-calculate offside player IDs for the Zone of Influence
+    const offsidePlayerIds = new Set<string>();
+    if (possessionTeam !== "NONE") {
+      const attackingTeam = possessionTeam;
+      const defendingTeam = attackingTeam === "A" ? "B" : "A";
+      const defenderXs = this.gameState.players
+        .filter((p) => p.team === defendingTeam && !p.referee)
+        .map((p) => p.x)
+        .sort((a, b) => a - b);
+      const bx = this.gameState.ball.x;
+
+      if (defendingTeam === "A") {
+        let offsideLineX = 0;
+        if (defenderXs.length >= 2) {
+          offsideLineX = defenderXs[1];
+        } else if (defenderXs.length === 1) {
+          offsideLineX = defenderXs[0];
+        }
+        this.gameState.players.forEach((p) => {
+          if (p.team === attackingTeam && !p.referee) {
+            // Offside: opponent's half (x < 50), behind second-last defender, and ahead of the ball
+            if (p.x < 50.0 && p.x < offsideLineX && p.x < bx) {
+              offsidePlayerIds.add(p.id);
+            }
+          }
+        });
+      } else {
+        let offsideLineX = 100;
+        const n = defenderXs.length;
+        if (n >= 2) {
+          offsideLineX = defenderXs[n - 2];
+        } else if (n === 1) {
+          offsideLineX = defenderXs[0];
+        }
+        this.gameState.players.forEach((p) => {
+          if (p.team === attackingTeam && !p.referee) {
+            // Offside: opponent's half (x > 50), behind second-last defender, and ahead of the ball
+            if (p.x > 50.0 && p.x > offsideLineX && p.x > bx) {
+              offsidePlayerIds.add(p.id);
+            }
+          }
+        });
+      }
+    }
+
     const cells: ZoneInfluenceCell[][] = [];
 
     for (let c = 0; c < cols; c++) {
@@ -522,6 +567,7 @@ export class GameStateStore {
         // Evaluate every player
         this.gameState.players.forEach((p) => {
           if (p.referee || p.team === "NONE") return;
+          if (offsidePlayerIds.has(p.id)) return;
 
           const dx = cx - p.x;
           const dy = cy - p.y;

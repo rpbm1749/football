@@ -731,8 +731,8 @@
           "team": "A",
           "goalkeeper": false,
           "referee": false,
-          "x": 17,
-          "y": 36.55,
+          "x": 17.63,
+          "y": 37.3,
           "heading_angle": 309,
           "jerseyNumber": "5"
         },
@@ -891,8 +891,8 @@
           "team": "B",
           "goalkeeper": false,
           "referee": false,
-          "x": 16.25,
-          "y": 37.93,
+          "x": 14.61,
+          "y": 39.57,
           "heading_angle": 353,
           "jerseyNumber": "11"
         },

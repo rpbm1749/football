@@ -208,10 +208,11 @@ export function PitchCanvas() {
       }
     }
 
-    // 1.6. Draw Vulnerability Analysis Overlay (if active in View Mode and opponent has possession)
+    // 1.6. Draw Vulnerability/Exploitable Area Analysis Overlay (if active in View Mode and a team has possession)
     const possessor = state.players.find(p => p.id === state.ball.playerIdWhoHasPossession);
+    const isTeamAAttacking = possessor?.team === "A";
     const isTeamBAttacking = possessor?.team === "B";
-    if (!editMode && showVulnerability && isTeamBAttacking) {
+    if (!editMode && showVulnerability && (isTeamBAttacking || isTeamAAttacking)) {
       const result = gameStateStore.getExploitabilityResult();
       const cols = result.cells.length;
       const rows = result.cells[0].length;
@@ -324,16 +325,31 @@ export function PitchCanvas() {
         const xWidth = toScreenX((c + 1) * cellW) - xStart;
 
         // Spatial Rules:
+        // For Team B attacking (right-to-left):
         // Rule 1: ball in B's half (bx >= 50.0) -> render only in A's half (cx < 50.0)
         // Rule 2: ball in A's half (33.33 <= bx < 50.0) -> render ahead of ball (cx < bx)
         // Rule 3: ball in A's final third (bx < 33.33) -> render final third (cx < 33.33)
+        // For Team A attacking (left-to-right):
+        // Rule 1: ball in A's half (bx <= 50.0) -> render only in B's half (cx > 50.0)
+        // Rule 2: ball in B's half (50.0 < bx <= 66.67) -> render ahead of ball (cx > bx)
+        // Rule 3: ball in B's final third (bx > 66.67) -> render final third (cx > 66.67)
         let passSpatial = false;
-        if (bx >= 50.0) {
-          if (cx < 50.0) passSpatial = true;
-        } else if (bx >= 33.33 && bx < 50.0) {
-          if (cx < bx) passSpatial = true;
-        } else {
-          if (cx < 33.33) passSpatial = true;
+        if (isTeamBAttacking) {
+          if (bx >= 50.0) {
+            if (cx < 50.0) passSpatial = true;
+          } else if (bx >= 33.33 && bx < 50.0) {
+            if (cx < bx) passSpatial = true;
+          } else {
+            if (cx < 33.33) passSpatial = true;
+          }
+        } else if (isTeamAAttacking) {
+          if (bx <= 50.0) {
+            if (cx > 50.0) passSpatial = true;
+          } else if (bx <= 66.67 && bx > 50.0) {
+            if (cx > bx) passSpatial = true;
+          } else {
+            if (cx > 66.67) passSpatial = true;
+          }
         }
 
         if (!passSpatial) continue;

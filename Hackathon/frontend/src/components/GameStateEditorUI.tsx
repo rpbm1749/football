@@ -646,6 +646,49 @@ export function GameStateEditorUI() {
                           <button
                             onClick={() => {
                               if (isTeamAAttacking) {
+                                gameStateStore.toggleVulnerability();
+                              }
+                            }}
+                            disabled={!isTeamAAttacking}
+                            style={{
+                              ...styles.secondaryButton,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: "8px",
+                              background: showVulnerability && isTeamAAttacking
+                                ? "rgba(231, 76, 60, 0.15)"
+                                : "rgba(255, 255, 255, 0.05)",
+                              border: showVulnerability && isTeamAAttacking
+                                ? "1px solid rgba(231, 76, 60, 0.4)"
+                                : "1px solid rgba(255, 255, 255, 0.1)",
+                              color: !isTeamAAttacking
+                                ? "#666"
+                                : showVulnerability
+                                ? "#ff4d4d"
+                                : "#ccc",
+                              padding: "10px 14px",
+                              width: "100%",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              textAlign: "left",
+                              cursor: isTeamAAttacking ? "pointer" : "not-allowed",
+                              borderRadius: "8px",
+                              transition: "all 0.2s ease",
+                              marginTop: "8px",
+                              opacity: isTeamAAttacking ? 1 : 0.4,
+                            }}
+                            title={!isTeamAAttacking ? "Only active when Team A has possession" : "Toggle Exploitable Area"}
+                          >
+                            <span style={{ fontSize: "14px", fontWeight: "bold" }}>
+                              {showVulnerability && isTeamAAttacking ? "✓" : "○"}
+                            </span>
+                            <span>Exploitable Area {!isTeamAAttacking && "🔒"}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (isTeamAAttacking) {
                                 gameStateStore.togglePassingOptions();
                               }
                             }}
