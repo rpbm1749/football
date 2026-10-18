@@ -58,3 +58,45 @@ export const AnalyzeSequenceRequestSchema = z.object({
 
 export type AnalyzeBoardRequest = z.infer<typeof AnalyzeBoardRequestSchema>;
 export type AnalyzeSequenceRequest = z.infer<typeof AnalyzeSequenceRequestSchema>;
+
+// --- Scenarios -----------------------------------------------------------------
+
+/** Scenario names are file-like ("my_scenario.json"): no paths, no traversal. */
+export const ScenarioNameSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9][A-Za-z0-9 _.-]{0,95}\.json$/, "must be a simple file name ending in .json")
+  .refine((name) => !name.includes(".."), "must not contain '..'");
+
+export const ScenarioSequenceSchema = z.object({
+  type: z.literal("ScenarioSequence"),
+  id: z.string().max(200),
+  name: z.string().max(200),
+  boards: z.array(GameStateSchema).max(MAX_SEQUENCE_BOARDS),
+});
+
+/** A saved scenario is either a single board or a named sequence of boards. */
+export const ScenarioDocumentSchema = z.union([ScenarioSequenceSchema, GameStateSchema]);
+export type ScenarioDocument = z.infer<typeof ScenarioDocumentSchema>;
+
+export const DuplicateScenarioRequestSchema = z.object({ newName: ScenarioNameSchema });
+
+// --- Reports -------------------------------------------------------------------
+
+export const TacticalReportRequestSchema = z.object({
+  boards: z.array(GameStateSchema).min(1).max(MAX_SEQUENCE_BOARDS),
+  model: ModelOverridesSchema.optional(),
+});
+export type TacticalReportRequest = z.infer<typeof TacticalReportRequestSchema>;
+
+// --- Live analysis (WebSocket) ---------------------------------------------------
+
+export const LiveAnalyzeMessageSchema = z.object({
+  type: z.literal("analyze"),
+  /** Client-chosen, increasing request id; replies echo it. */
+  id: z.number().int().nonnegative(),
+  board: GameStateSchema,
+  layers: z.array(LayerNameSchema).min(1).optional(),
+  model: ModelOverridesSchema.optional(),
+});
+export const LiveClientMessageSchema = z.discriminatedUnion("type", [LiveAnalyzeMessageSchema]);
+export type LiveClientMessage = z.infer<typeof LiveClientMessageSchema>;

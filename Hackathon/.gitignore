@@ -7,3 +7,6 @@ coverage/
 !.env.example
 *.local
 .DS_Store
+
+# The repo root ignores every data/ directory (match videos); saved scenarios are source-controlled.
+!apps/api/data/

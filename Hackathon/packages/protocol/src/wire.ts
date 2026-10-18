@@ -1,4 +1,4 @@
-import type { FrameSummary, LayerName, PlayingTeam, Point, Team } from "@football/engine";
+import type { FrameSummary, LayerName, PlayingTeam, Point, SequenceAggregate, Team } from "@football/engine";
 
 /**
  * Wire format for analysis results.
@@ -29,18 +29,24 @@ function dtypeOf(arr: Typed): DType {
   return "f32";
 }
 
+/** Node's Buffer when running on the server; undefined in browsers (no Node typings needed). */
+const NodeBuffer = (globalThis as unknown as {
+  Buffer?: {
+    from(data: ArrayBufferLike, byteOffset: number, length: number): { toString(encoding: "base64"): string };
+    from(data: string, encoding: "base64"): Uint8Array;
+  };
+}).Buffer;
+
 function bytesToBase64(bytes: Uint8Array): string {
-  if (typeof Buffer !== "undefined") return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("base64");
+  if (NodeBuffer) return NodeBuffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("base64");
   let binary = "";
   for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return btoa(binary);
 }
 
 function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
-  if (typeof Buffer !== "undefined") {
-    // Copy out of Node's pooled buffer into a fresh, aligned ArrayBuffer so any typed-array view is valid.
-    return new Uint8Array(Buffer.from(b64, "base64"));
-  }
+  // Always copy into a fresh, aligned ArrayBuffer so any typed-array view is valid.
+  if (NodeBuffer) return new Uint8Array(NodeBuffer.from(b64, "base64"));
   const binary = atob(b64);
   const out = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
@@ -134,4 +140,21 @@ export interface SequenceAnalysisWire {
   boardCount: number;
   frames: FrameSummary[];
   timings: { totalMs: number; threads: number; chunks: number };
+}
+
+export type LiveServerMessage =
+  | { type: "analysis"; id: number; result: BoardAnalysisWire }
+  | { type: "superseded"; id: number }
+  | { type: "error"; id: number | null; error: string };
+
+export interface TacticalReportWire {
+  /** Markdown report, or null if the language model was unavailable. */
+  analysis: string | null;
+  error?: string;
+  telemetry: { boardCount: number; frames: FrameSummary[] };
+  aggregate: SequenceAggregate | null;
+  promptVersion: string;
+  model: string | null;
+  cached: boolean;
+  timings: { telemetryMs: number; llmMs: number };
 }
