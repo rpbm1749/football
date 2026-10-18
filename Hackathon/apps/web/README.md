@@ -1,32 +1,19 @@
-# React + TypeScript + Vite
+# @football/web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The tactical board editor and visualiser (React + Canvas). It is a pure client: analysis, saved scenarios and AI reports all come from [`@football/api`](../api/README.md).
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+npm run start:api     # from the repo root, in one terminal
+npm run dev:web       # in another: http://localhost:5173
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+In development, Vite proxies `/v1` (HTTP and the `/v1/live` WebSocket) to `http://localhost:3000`. Set `API_PROXY_TARGET` to change the target, or `VITE_API_BASE` to point a production build at a remote API.
+
+| Path | Role |
+|---|---|
+| `src/state/GameStateStore.ts` | Editor state, overlay toggles, per-board analysis cache |
+| `src/api/live.ts` | Live analysis WebSocket client (latest-wins, HTTP fallback, reconnect) |
+| `src/api/client.ts` | REST client: scenarios, board analysis, tactical reports |
+| `src/api/analysis.ts` | Decodes server grids (base64 typed arrays) for drawing |
+| `src/components/PitchCanvas.tsx` | Draws the pitch and the server's overlays |
+| `src/components/GameStateEditorUI.tsx` | Editor panels and the AI report modal |
