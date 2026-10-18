@@ -99,6 +99,36 @@ export const DEFAULT_PITCH: Readonly<PitchSpec> = Object.freeze({
   rightChannelY: 40.0,
 });
 
+/**
+ * Discrete rule choices (as opposed to the numeric constants above).
+ */
+export interface RuleSet {
+  /**
+   * Which players the offside rule removes from the zone-of-influence map.
+   *
+   * - "both-teams" (default): any player beyond the opposition's
+   *   second-last defender, in the opposition half and ahead of the ball,
+   *   for either team. Space "owned" by an out-of-possession forward standing
+   *   in an offside position is not usable if that team wins the ball back,
+   *   and loose-ball frames treat both teams the same.
+   * - "possession-team": v1 behaviour. Only the team in possession is checked,
+   *   and nobody is checked when the ball is loose.
+   *
+   * Pass-based layers (exploitability, passing, runs, overloads) only ever
+   * exclude offside *attackers*: a defender can always intercept, wherever
+   * they stand.
+   */
+  influenceOffside: "both-teams" | "possession-team";
+}
+
+export const DEFAULT_RULES: Readonly<RuleSet> = Object.freeze({
+  influenceOffside: "both-teams",
+});
+
+export function resolveRules(overrides?: Partial<RuleSet>): RuleSet {
+  return { ...DEFAULT_RULES, ...overrides };
+}
+
 export function resolveModel(overrides?: Partial<PhysicsModel>): PhysicsModel {
   return { ...DEFAULT_MODEL, ...overrides };
 }

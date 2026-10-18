@@ -22,6 +22,8 @@ Every constant lives in `PhysicsModel` (`src/config.ts`). Any of them can be ove
 const analysis = new BoardAnalysis(board, { model: { reactionDelay: 0.25 } });
 ```
 
+Discrete rule choices live in `RuleSet`. For example, `influenceOffside` controls whether offside removes players of both teams from zone of influence (the default) or only the team in possession (v1; see [ADR 0005](../../docs/adr/0005-offside-in-zone-of-influence.md)).
+
 ## Layers
 
 Each layer is computed lazily and at most once per board:
@@ -53,7 +55,7 @@ Per-cell results are flat typed arrays in column-major order (`index = col * 48 
 npm test -w @football/engine
 ```
 
-- **Parity (differential) tests** run the frozen v1 browser implementation (`test/legacy/`) and the engine on 109 recorded boards: hand-built scenarios plus boards extracted from drone footage by the perception pipeline. They assert exact equality for every cell of every layer and for the report telemetry. Changing a single constant by 1e-7 fails 56 of them.
+- **Parity (differential) tests** run the frozen v1 browser implementation (`test/legacy/`) and the engine on 109 recorded boards: hand-built scenarios plus boards extracted from drone footage by the perception pipeline. They run with v1's rules and assert exact equality for every cell of every layer and for the report telemetry. Changing a single constant by 1e-7 fails 56 of them.
 - **Property tests:** mirroring the pitch and swapping teams mirrors the analysis; slower defending never shrinks exploitable space.
 - **Unit tests:** kinematics, offside and region labelling.
 

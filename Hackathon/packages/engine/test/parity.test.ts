@@ -13,6 +13,9 @@ import { loadFixtureBoards } from "./helpers.ts";
 
 const boards = loadFixtureBoards({ maxPerFile: 60 });
 
+// v1 only applied offside to the team in possession in zone of influence; parity runs with that rule.
+const V1_RULES = { rules: { influenceOffside: "possession-team" } } as const;
+
 function legacyFor(board: GameState) {
   const store = new GameStateStore();
   if (!store.importFromJsonString(JSON.stringify(board))) throw new Error("legacy store rejected board");
@@ -38,7 +41,7 @@ const cellsOf = (cells: { col: number; row: number }[]) => cells.map(cellIndex);
 
 describe.each(boards)("parity with v1 on $label", ({ board }) => {
   const legacy = legacyFor(board);
-  const engine = new BoardAnalysis(board);
+  const engine = new BoardAnalysis(board, V1_RULES);
 
   it("zone of influence", () => {
     const expected = legacy.getZoneInfluenceResult().cells;

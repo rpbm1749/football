@@ -1,4 +1,4 @@
-import type { PhysicsModel, PitchSpec } from "./config.ts";
+import { DEFAULT_RULES, type PhysicsModel, type PitchSpec, type RuleSet } from "./config.ts";
 import { Grid, gridFor } from "./grid.ts";
 import { movementTime } from "./kinematics.ts";
 import { offsidePlayerIds, opponentOf } from "./offside.ts";
@@ -16,6 +16,7 @@ export class BoardContext {
   readonly state: GameState;
   readonly players: readonly PlayerState[];
   readonly model: PhysicsModel;
+  readonly rules: RuleSet;
   readonly grid: Grid;
 
   /** Raw possession id (may reference a player who is not on the board). */
@@ -31,10 +32,11 @@ export class BoardContext {
   private offsideForInfluenceCache: Set<string> | null = null;
   private readonly movementFields: (Float64Array | null | undefined)[];
 
-  constructor(state: GameState, model: PhysicsModel, pitch: PitchSpec) {
+  constructor(state: GameState, model: PhysicsModel, pitch: PitchSpec, rules: RuleSet = DEFAULT_RULES) {
     this.state = state;
     this.players = state.players;
     this.model = model;
+    this.rules = rules;
     this.grid = gridFor(pitch);
     this.possessorId = state.ball.playerIdWhoHasPossession || null;
     this.possessorIndex = this.possessorId === null ? -1 : this.players.findIndex((p) => p.id === this.possessorId);
@@ -61,13 +63,21 @@ export class BoardContext {
     return this.offsideForAttackCache;
   }
 
-  /** Offside set for zone of influence: only applies when a team actually has the ball. */
+  /** Players excluded from zone of influence by the offside rule (see RuleSet.influenceOffside). */
   get offsideForInfluence(): Set<string> {
     if (!this.offsideForInfluenceCache) {
-      this.offsideForInfluenceCache =
-        this.possessionTeam === "A" || this.possessionTeam === "B"
-          ? offsidePlayerIds(this.players, this.possessionTeam, this.state.ball.x, this.pitch)
-          : new Set();
+      const bx = this.state.ball.x;
+      if (this.rules.influenceOffside === "both-teams") {
+        this.offsideForInfluenceCache = new Set([
+          ...offsidePlayerIds(this.players, "A", bx, this.pitch),
+          ...offsidePlayerIds(this.players, "B", bx, this.pitch),
+        ]);
+      } else {
+        this.offsideForInfluenceCache =
+          this.possessionTeam === "A" || this.possessionTeam === "B"
+            ? offsidePlayerIds(this.players, this.possessionTeam, bx, this.pitch)
+            : new Set();
+      }
     }
     return this.offsideForInfluenceCache;
   }

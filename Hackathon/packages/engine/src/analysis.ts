@@ -1,4 +1,4 @@
-import { resolveModel, resolvePitch, type PhysicsModel, type PitchSpec } from "./config.ts";
+import { resolveModel, resolvePitch, resolveRules, type PhysicsModel, type PitchSpec, type RuleSet } from "./config.ts";
 import { BoardContext } from "./context.ts";
 import type { Grid } from "./grid.ts";
 import { computeExploitability, type ExploitabilityLayer } from "./layers/exploitability.ts";
@@ -13,6 +13,7 @@ import type { GameState } from "./types.ts";
 export interface AnalysisOptions {
   model?: Partial<PhysicsModel>;
   pitch?: Partial<PitchSpec>;
+  rules?: Partial<RuleSet>;
   /**
    * Advanced: precomputed movement fields indexed like `state.players`
    * (see `fillMovementField`). Lets callers parallelise the most expensive
@@ -65,7 +66,7 @@ export class BoardAnalysis {
   private cache: Partial<Record<LayerName, unknown>> = {};
 
   constructor(state: GameState, options: AnalysisOptions = {}) {
-    this.context = new BoardContext(state, resolveModel(options.model), resolvePitch(options.pitch));
+    this.context = new BoardContext(state, resolveModel(options.model), resolvePitch(options.pitch), resolveRules(options.rules));
     if (options.movementFields) this.context.provideMovementFields(options.movementFields);
   }
 
