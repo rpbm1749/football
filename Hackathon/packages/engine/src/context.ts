@@ -86,18 +86,35 @@ export class BoardContext {
   movementField(index: number): Float64Array {
     let field = this.movementFields[index];
     if (!field) {
-      const { grid, model } = this;
-      const player = this.players[index];
-      field = new Float64Array(grid.size);
-      let k = 0;
-      for (let c = 0; c < grid.cols; c++) {
-        const cx = grid.cx[c];
-        for (let r = 0; r < grid.rows; r++) {
-          field[k++] = movementTime(model, player, cx, grid.cy[r]);
-        }
-      }
+      field = fillMovementField(this.model, this.players[index], this.grid, new Float64Array(this.grid.size));
       this.movementFields[index] = field;
     }
     return field;
   }
+
+  /**
+   * Supply movement fields computed elsewhere (e.g. by worker threads writing
+   * into a SharedArrayBuffer). Entries left null/undefined are computed lazily.
+   */
+  provideMovementFields(fields: ReadonlyArray<Float64Array | null | undefined>): void {
+    for (let i = 0; i < fields.length && i < this.players.length; i++) {
+      const field = fields[i];
+      if (field) {
+        if (field.length !== this.grid.size) throw new RangeError(`movement field ${i} has ${field.length} cells, expected ${this.grid.size}`);
+        this.movementFields[i] = field;
+      }
+    }
+  }
+}
+
+/** Write the movement-time field of `player` into `out` (length = grid.size). */
+export function fillMovementField(model: PhysicsModel, player: PlayerState, grid: Grid, out: Float64Array): Float64Array {
+  let k = 0;
+  for (let c = 0; c < grid.cols; c++) {
+    const cx = grid.cx[c];
+    for (let r = 0; r < grid.rows; r++) {
+      out[k++] = movementTime(model, player, cx, grid.cy[r]);
+    }
+  }
+  return out;
 }

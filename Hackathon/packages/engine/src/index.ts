@@ -1,7 +1,7 @@
 export * from "./types.ts";
 export * from "./config.ts";
 export { Grid, gridFor } from "./grid.ts";
-export { BoardContext } from "./context.ts";
+export { BoardContext, fillMovementField } from "./context.ts";
 export { movementTime, turnPenalty, ballFlightTime, ballSpeed } from "./kinematics.ts";
 export { offsidePlayerIds, opponentOf } from "./offside.ts";
 export { isGroundLaneBlocked, type LaneSpeedReference } from "./lanes.ts";

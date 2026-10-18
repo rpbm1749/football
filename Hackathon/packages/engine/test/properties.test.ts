@@ -2,7 +2,7 @@
  * Model-level properties that must hold regardless of implementation.
  */
 import { describe, expect, it } from "vitest";
-import { BoardAnalysis, Control, CellState, type GameState } from "../src/index.ts";
+import { BoardAnalysis, Control, CellState, fillMovementField, type GameState } from "../src/index.ts";
 import { loadFixtureBoards, mirrorBoard } from "./helpers.ts";
 
 const COLS = 80;
@@ -44,6 +44,19 @@ describe("monotonicity", () => {
     const slowerDefence = new BoardAnalysis(board, { model: { reactionDelay: 0.4 } });
     const count = (a: BoardAnalysis) => a.exploitability.state.filter((s) => s === CellState.Exploitable).length;
     expect(count(slowerDefence)).toBeGreaterThanOrEqual(count(base));
+  });
+});
+
+describe("precomputed movement fields", () => {
+  it.each(withPossession.slice(0, 5))("give identical results to lazy computation ($label)", ({ board }) => {
+    const lazy = new BoardAnalysis(board);
+    const fields = board.players.map((p) =>
+      p.referee || p.team === "NONE" ? null : fillMovementField(lazy.context.model, p, lazy.grid, new Float64Array(lazy.grid.size)),
+    );
+    const injected = new BoardAnalysis(board, { movementFields: fields });
+    expect(injected.summary()).toEqual(lazy.summary());
+    expect(injected.exploitability.state).toEqual(lazy.exploitability.state);
+    expect(injected.influence.arrivalA).toEqual(lazy.influence.arrivalA);
   });
 });
 

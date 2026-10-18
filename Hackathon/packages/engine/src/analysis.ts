@@ -13,10 +13,38 @@ import type { GameState } from "./types.ts";
 export interface AnalysisOptions {
   model?: Partial<PhysicsModel>;
   pitch?: Partial<PitchSpec>;
+  /**
+   * Advanced: precomputed movement fields indexed like `state.players`
+   * (see `fillMovementField`). Lets callers parallelise the most expensive
+   * step across threads; anything missing is computed on demand.
+   */
+  movementFields?: ReadonlyArray<Float64Array | null | undefined>;
 }
 
 export const LAYER_NAMES = ["influence", "exploitability", "vulnerability", "passing", "runs", "overloads"] as const;
 export type LayerName = (typeof LAYER_NAMES)[number];
+
+/** Direct dependencies of each layer. LAYER_NAMES is already in a valid evaluation order. */
+export const LAYER_DEPENDENCIES: Readonly<Record<LayerName, readonly LayerName[]>> = {
+  influence: [],
+  exploitability: [],
+  vulnerability: ["exploitability"],
+  passing: ["exploitability", "influence"],
+  runs: ["exploitability"],
+  overloads: ["exploitability"],
+};
+
+/** The requested layers plus everything they depend on, in evaluation order. */
+export function layerClosure(requested: readonly LayerName[]): LayerName[] {
+  const needed = new Set<LayerName>();
+  const visit = (layer: LayerName) => {
+    if (needed.has(layer)) return;
+    needed.add(layer);
+    LAYER_DEPENDENCIES[layer].forEach(visit);
+  };
+  requested.forEach(visit);
+  return LAYER_NAMES.filter((l) => needed.has(l));
+}
 
 /**
  * Lazily evaluated analysis of a single board.
@@ -38,6 +66,7 @@ export class BoardAnalysis {
 
   constructor(state: GameState, options: AnalysisOptions = {}) {
     this.context = new BoardContext(state, resolveModel(options.model), resolvePitch(options.pitch));
+    if (options.movementFields) this.context.provideMovementFields(options.movementFields);
   }
 
   get grid(): Grid {
@@ -73,9 +102,9 @@ export class BoardAnalysis {
     return this.memo("overloads", () => computeOverloads(this.context, this.exploitability));
   }
 
-  /** Force evaluation of the requested layers (all by default). */
+  /** Force evaluation of the requested layers (all by default) and their dependencies. */
   compute(layers: readonly LayerName[] = LAYER_NAMES): this {
-    for (const layer of layers) void this[layer];
+    for (const layer of layerClosure(layers)) void this[layer];
     return this;
   }
 
