@@ -4,7 +4,6 @@
   "name": "ArgentinaVsFrance",
   "boards": [
     {
-      "name": "State 1",
       "players": [
         {
           "id": "A_GK",
@@ -229,12 +228,12 @@
       ],
       "ball": {
         "x": 3.75,
-        "y": 8.29,
-        "playerIdWhoHasPossession": "B_RW"
-      }
+        "y": 10.29,
+        "playerIdWhoHasPossession": null
+      },
+      "name": "State 1"
     },
     {
-      "name": "State 2",
       "players": [
         {
           "id": "A_GK",
@@ -334,7 +333,7 @@
           "x": 23.68,
           "y": 31.64,
           "heading_angle": 187,
-          "jerseyNumber": "7"
+          "jerseyNumber": "20"
         },
         {
           "id": "A_ST",
@@ -461,10 +460,10 @@
         "x": 5.65,
         "y": 16.51,
         "playerIdWhoHasPossession": "A_LDMC"
-      }
+      },
+      "name": "State 2"
     },
     {
-      "name": "State 3",
       "players": [
         {
           "id": "A_GK",
@@ -564,7 +563,7 @@
           "x": 21.16,
           "y": 27.86,
           "heading_angle": 187,
-          "jerseyNumber": "7"
+          "jerseyNumber": "20"
         },
         {
           "id": "A_ST",
@@ -691,10 +690,10 @@
         "x": 3.21,
         "y": 24.85,
         "playerIdWhoHasPossession": "A_GK"
-      }
+      },
+      "name": "State 3"
     },
     {
-      "name": "State 4",
       "players": [
         {
           "id": "A_GK",
@@ -794,7 +793,7 @@
           "x": 26.83,
           "y": 25.59,
           "heading_angle": 331,
-          "jerseyNumber": "7"
+          "jerseyNumber": "20"
         },
         {
           "id": "A_ST",
@@ -921,10 +920,10 @@
         "x": 40.53,
         "y": 5.64,
         "playerIdWhoHasPossession": "B_RCB"
-      }
+      },
+      "name": "State 4"
     },
     {
-      "name": "State 5",
       "players": [
         {
           "id": "A_GK",
@@ -1024,7 +1023,7 @@
           "x": 31.74,
           "y": 21.31,
           "heading_angle": 331,
-          "jerseyNumber": "7"
+          "jerseyNumber": "20"
         },
         {
           "id": "A_ST",
@@ -1151,10 +1150,10 @@
         "x": 39.05,
         "y": 1.29,
         "playerIdWhoHasPossession": "B_RCB"
-      }
+      },
+      "name": "State 5"
     },
     {
-      "name": "State 6",
       "players": [
         {
           "id": "A_GK",
@@ -1204,7 +1203,7 @@
           "x": 42.57,
           "y": 51.28,
           "heading_angle": 254,
-          "jerseyNumber": "2"
+          "jerseyNumber": "11"
         },
         {
           "id": "A_LDMC",
@@ -1381,10 +1380,10 @@
         "x": 20.54,
         "y": 6.07,
         "playerIdWhoHasPossession": "A_LB"
-      }
+      },
+      "name": "State 6"
     },
     {
-      "name": "State 7",
       "players": [
         {
           "id": "A_GK",
@@ -1611,10 +1610,10 @@
         "x": 31.72,
         "y": 17.29,
         "playerIdWhoHasPossession": "A_RAM"
-      }
+      },
+      "name": "State 7"
     },
     {
-      "name": "State 8",
       "players": [
         {
           "id": "A_GK",
@@ -1841,10 +1840,10 @@
         "x": 43.71,
         "y": 12.81,
         "playerIdWhoHasPossession": "A_CAM"
-      }
+      },
+      "name": "State 8"
     },
     {
-      "name": "State 9",
       "players": [
         {
           "id": "A_GK",
@@ -2071,10 +2070,10 @@
         "x": 43.71,
         "y": 12.81,
         "playerIdWhoHasPossession": "A_CAM"
-      }
+      },
+      "name": "State 9"
     },
     {
-      "name": "State 10",
       "players": [
         {
           "id": "A_GK",
@@ -2301,10 +2300,10 @@
         "x": 53.94,
         "y": 3.4,
         "playerIdWhoHasPossession": "A_ST"
-      }
+      },
+      "name": "State 10"
     },
     {
-      "name": "State 11",
       "players": [
         {
           "id": "A_GK",
@@ -2531,7 +2530,8 @@
         "x": 82.08,
         "y": 20.55,
         "playerIdWhoHasPossession": "A_RAM"
-      }
+      },
+      "name": "State 11"
     }
   ]
 }

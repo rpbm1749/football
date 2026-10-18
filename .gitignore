@@ -32,3 +32,4 @@ venv/
 ENV/
 .agents/
 Idk_wtf_is_happening/
+__pycache__
