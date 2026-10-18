@@ -1,5 +1,19 @@
 {
-  "dependencies": {
-    "phaser": "^4.2.0"
+  "name": "football-tactics",
+  "private": true,
+  "type": "module",
+  "description": "Spatial football analysis platform: tactical board, analysis engine and backend services.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @football/web",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "bench": "npm run bench -w @football/engine"
+  },
+  "engines": {
+    "node": ">=22.18"
   }
 }
