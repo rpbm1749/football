@@ -13,4 +13,5 @@ export * from "./layers/passing.ts";
 export * from "./layers/runs.ts";
 export * from "./layers/overloads.ts";
 export * from "./metrics.ts";
+export * from "./aggregate.ts";
 export * from "./analysis.ts";
