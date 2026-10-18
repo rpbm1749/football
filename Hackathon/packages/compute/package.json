@@ -1,0 +1,28 @@
+{
+  "name": "@football/compute",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Worker-thread compute pool that runs @football/engine off the event loop.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "bench:scaling": "node bench/scaling.ts"
+  },
+  "dependencies": {
+    "@football/engine": "0.1.0",
+    "@football/protocol": "0.1.0",
+    "piscina": "^5.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
+  }
+}
