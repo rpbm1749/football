@@ -1,5 +1,7 @@
 import React, { useSyncExternalStore, useEffect, useState } from "react";
-import { gameStateStore } from "../simulation/rendering/GameStateStore";
+import type { SequenceAggregate } from "@football/engine";
+import { api } from "../api/client";
+import { gameStateStore } from "../state/GameStateStore";
 
 export function GameStateEditorUI() {
   const state = useSyncExternalStore(
@@ -99,8 +101,8 @@ export function GameStateEditorUI() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [analysisPayload, setAnalysisPayload] = useState<any | null>(null);
-  const [analysisCache, setAnalysisCache] = useState<Record<string, string>>({});
+  const [analysisAggregate, setAnalysisAggregate] = useState<SequenceAggregate | null>(null);
+  const [analysisCache, setAnalysisCache] = useState<Record<string, { analysis: string; aggregate: SequenceAggregate | null }>>({});
 
   // Load scenarios on mount & inject spinner keyframes
   useEffect(() => {
@@ -118,46 +120,36 @@ export function GameStateEditorUI() {
     };
   }, []);
 
+  // Telemetry, dashboard aggregates and the LLM narrative are all produced by the API.
   const handleTacticalAnalysis = async (mode: "current" | "sequence") => {
     setShowAnalysisModal(true);
-    
-    try {
-      const payload = gameStateStore.getTacticalAnalysisPayload(mode);
-      setAnalysisPayload(payload);
-      const payloadStr = JSON.stringify(payload);
 
-      if (analysisCache[payloadStr]) {
-        // Cache hit: instantly display result
-        setAnalysisResult(analysisCache[payloadStr]);
-        setAnalysisLoading(false);
-        setAnalysisError(null);
-        return;
-      }
-
-      // Cache miss: proceed to fetch
-      setAnalysisLoading(true);
-      setAnalysisResult(null);
+    const boards = gameStateStore.getBoardsForReport(mode);
+    const cacheKey = JSON.stringify(boards);
+    const cached = analysisCache[cacheKey];
+    if (cached) {
+      // Cache hit: instantly display result
+      setAnalysisResult(cached.analysis);
+      setAnalysisAggregate(cached.aggregate);
+      setAnalysisLoading(false);
       setAnalysisError(null);
+      return;
+    }
 
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: payloadStr
-      });
+    setAnalysisLoading(true);
+    setAnalysisResult(null);
+    setAnalysisAggregate(null);
+    setAnalysisError(null);
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+    try {
+      const report = await api.tacticalReport(boards);
+      setAnalysisAggregate(report.aggregate);
+      if (report.analysis === null) {
+        throw new Error(report.error ?? "The report could not be generated.");
       }
-
-      const data = await response.json();
-      setAnalysisResult(data.analysis);
-
-      // Save to cache
-      setAnalysisCache(prev => ({
-        ...prev,
-        [payloadStr]: data.analysis
-      }));
+      setAnalysisResult(report.analysis);
+      const narrative = report.analysis;
+      setAnalysisCache(prev => ({ ...prev, [cacheKey]: { analysis: narrative, aggregate: report.aggregate } }));
     } catch (e: any) {
       console.error("AI Analysis failed:", e);
       setAnalysisError(e.message || "An unexpected error occurred while generating the report.");
@@ -1436,7 +1428,7 @@ export function GameStateEditorUI() {
                     paddingRight: "4px"
                   }}>
                     {(() => {
-                      const avg = calculateAverageMetrics(analysisPayload);
+                      const avg = analysisAggregate;
                       if (!avg) return <p style={{ color: "#aaa" }}>No telemetry data found.</p>;
 
                       return (
@@ -2187,84 +2179,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: "#a0aec0",
   },
-};
-
-const calculateAverageMetrics = (payload: any) => {
-  if (!payload || !payload.frames || payload.frames.length === 0) return null;
-
-  const attackingFrames = payload.frames.filter((f: any) => f.possessionTeam === "A");
-  const defendingFrames = payload.frames.filter((f: any) => f.possessionTeam === "B");
-
-  const averageList = (frames: any[], keySelector: (f: any) => number) => {
-    if (frames.length === 0) return 0;
-    const sum = frames.reduce((acc, f) => acc + keySelector(f), 0);
-    return Math.round((sum / frames.length) * 10) / 10;
-  };
-
-  const averageObject = (frames: any[], path: "zoneOfInfluence" | "defensiveThird" | "middleThird" | "attackingThird") => {
-    if (frames.length === 0) return { teamA: 0, teamB: 0, contested: 0 };
-    let a = 0, b = 0, c = 0;
-    frames.forEach(f => {
-      const obj = path === "zoneOfInfluence" ? f.zoneOfInfluence.overall : f.zoneOfInfluence[path];
-      if (obj) {
-        a += obj.teamA || 0;
-        b += obj.teamB || 0;
-        c += obj.contested || 0;
-      }
-    });
-    return {
-      teamA: Math.round((a / frames.length) * 10) / 10,
-      teamB: Math.round((b / frames.length) * 10) / 10,
-      contested: Math.round((c / frames.length) * 10) / 10
-    };
-  };
-
-  return {
-    attacking: {
-      count: attackingFrames.length,
-      influence: averageObject(attackingFrames, "zoneOfInfluence"),
-      influenceThirds: attackingFrames.length > 0 ? {
-        defensive: averageObject(attackingFrames, "defensiveThird"),
-        middle: averageObject(attackingFrames, "middleThird"),
-        attacking: averageObject(attackingFrames, "attackingThird")
-      } : null,
-      progressiveOptions: averageList(attackingFrames, f => f.passingOptions.progressiveOptionsCount),
-      safeArea: averageList(attackingFrames, f => f.passingOptions.averageSafeCellsOfProgressiveOptions),
-      runs: averageList(attackingFrames, f => f.runningChannels.totalRunsCount),
-      runsLeft: averageList(attackingFrames, f => f.runningChannels.runsInLeft),
-      runsRight: averageList(attackingFrames, f => f.runningChannels.runsInRight),
-      runsCenter: averageList(attackingFrames, f => f.runningChannels.runsInCenter),
-      overloads: averageList(attackingFrames, f => f.attackingOverloads.totalOverloadsCount),
-      overloadArea: averageList(attackingFrames, f => f.attackingOverloads.totalOverloadCells),
-      overloadsLeft: averageList(attackingFrames, f => f.attackingOverloads.overloadsInLeft),
-      overloadsRight: averageList(attackingFrames, f => f.attackingOverloads.overloadsInRight),
-      overloadsCenter: averageList(attackingFrames, f => f.attackingOverloads.overloadsInCenter)
-    },
-    defending: {
-      count: defendingFrames.length,
-      influence: averageObject(defendingFrames, "zoneOfInfluence"),
-      influenceThirds: defendingFrames.length > 0 ? {
-        defensive: averageObject(defendingFrames, "defensiveThird"),
-        middle: averageObject(defendingFrames, "middleThird"),
-        attacking: averageObject(defendingFrames, "attackingThird")
-      } : null,
-      vulnerability: {
-        regions: averageList(defendingFrames, f => f.vulnerabilityDefendingHalf.vulnerableRegionsCount),
-        area: averageList(defendingFrames, f => f.vulnerabilityDefendingHalf.totalVulnerableCells)
-      },
-      progressiveOptions: averageList(defendingFrames, f => f.opponentPassingOptions.progressiveOptionsCount),
-      safeArea: averageList(defendingFrames, f => f.opponentPassingOptions.averageSafeCellsOfProgressiveOptions),
-      runs: averageList(defendingFrames, f => f.opponentRuns.totalRunsCount),
-      runsLeft: averageList(defendingFrames, f => f.opponentRuns.runsInLeft),
-      runsRight: averageList(defendingFrames, f => f.opponentRuns.runsInRight),
-      runsCenter: averageList(defendingFrames, f => f.opponentRuns.runsInCenter),
-      overloads: averageList(defendingFrames, f => f.defensiveOverloads.totalOverloadsCount),
-      overloadArea: averageList(defendingFrames, f => f.defensiveOverloads.totalOverloadCells),
-      overloadsLeft: averageList(defendingFrames, f => f.defensiveOverloads.overloadsInLeft),
-      overloadsRight: averageList(defendingFrames, f => f.defensiveOverloads.overloadsInRight),
-      overloadsCenter: averageList(defendingFrames, f => f.defensiveOverloads.overloadsInCenter)
-    }
-  };
 };
 
 const renderMarkdown = (text: string) => {

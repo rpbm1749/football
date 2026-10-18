@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { gameStateStore } from "../simulation/rendering/GameStateStore";
+import { gameStateStore } from "../state/GameStateStore";
+import { CELL_CONTESTED, CELL_DEFENDED, CELL_EXPLOITABLE, CONTROL_A, CONTROL_B } from "../api/analysis";
+
+/** Server cell indices (col * rows + row) to {col, row} for drawing. */
+const cellsOf = (indices: Uint16Array, rows: number) =>
+  Array.from(indices, (k) => ({ col: Math.floor(k / rows), row: k % rows }));
 
 export function PitchCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -60,6 +65,22 @@ export function PitchCanvas() {
   const showDefensiveOverload = useSyncExternalStore(
     gameStateStore.subscribe.bind(gameStateStore),
     gameStateStore.getShowDefensiveOverload.bind(gameStateStore)
+  );
+
+  // Analysis results come from the API; this component only draws them.
+  const analysis = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getAnalysis.bind(gameStateStore)
+  );
+
+  const analysisStatus = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getAnalysisStatus.bind(gameStateStore)
+  );
+
+  const analysisError = useSyncExternalStore(
+    gameStateStore.subscribe.bind(gameStateStore),
+    gameStateStore.getAnalysisError.bind(gameStateStore)
   );
 
   // Track dragging / rotating states locally
@@ -158,10 +179,10 @@ export function PitchCanvas() {
     }
 
     // 1.5. Draw Zone of Influence Overlay (if active in View Mode)
-    if (!editMode && showZoneOfInfluence) {
-      const result = gameStateStore.getZoneInfluenceResult();
-      const cols = result.cells.length;
-      const rows = result.cells[0].length;
+    const influence = analysis?.influence;
+    if (!editMode && showZoneOfInfluence && influence && analysis) {
+      const cols = analysis.cols;
+      const rows = analysis.rows;
       const cellW = 100 / cols;
       const cellH = 60 / rows;
 
@@ -169,13 +190,13 @@ export function PitchCanvas() {
         const xStart = toScreenX(c * cellW);
         const xWidth = toScreenX((c + 1) * cellW) - xStart;
         for (let r = 0; r < rows; r++) {
-          const cell = result.cells[c][r];
+          const k = c * rows + r;
           const yStart = toScreenY((r + 1) * cellH);
           const yHeight = toScreenY(r * cellH) - yStart;
 
           // Compute absolute difference in arrival times
-          const arrivalA = cell.arrivalTimeA;
-          const arrivalB = cell.arrivalTimeB;
+          const arrivalA = influence.arrivalA[k];
+          const arrivalB = influence.arrivalB[k];
           let diff = 0;
           if (arrivalA !== Infinity && arrivalB !== Infinity) {
             diff = Math.abs(arrivalA - arrivalB);
@@ -185,7 +206,7 @@ export function PitchCanvas() {
             diff = 3.0;
           }
 
-          if (cell.isContested) {
+          if (influence.contested[k]) {
             // Smoothly transition between Dark Purple (rgba(100, 10, 150, 0.42)) at diff = 0.0
             // and Light Purple (rgba(200, 120, 240, 0.42)) at diff = 0.25
             const t = Math.min(1.0, Math.max(0.0, diff / 0.25));
@@ -194,9 +215,9 @@ export function PitchCanvas() {
             const bComp = Math.round(150 + t * 90);
             ctx.fillStyle = `rgba(${rComp}, ${gComp}, ${bComp}, 0.42)`;
           } else {
-            if (cell.controllingTeam === "A") {
+            if (influence.control[k] === CONTROL_A) {
               ctx.fillStyle = "rgba(65, 105, 225, 0.7)"; // Team A Blue
-            } else if (cell.controllingTeam === "B") {
+            } else if (influence.control[k] === CONTROL_B) {
               ctx.fillStyle = "rgba(211, 211, 211, 0.6)"; // Team B White
             } else {
               continue;
@@ -208,164 +229,35 @@ export function PitchCanvas() {
       }
     }
 
-    // 1.6. Draw Vulnerability/Exploitable Area Analysis Overlay (if active in View Mode and a team has possession)
+    // 1.6. Draw Vulnerability/Exploitable Area Analysis Overlay (if active in View Mode and a team has possession).
+    // Noise filtering, trajectory ray-tracing and the spatial relevance mask are all done server-side.
     const possessor = state.players.find(p => p.id === state.ball.playerIdWhoHasPossession);
     const isTeamAAttacking = possessor?.team === "A";
     const isTeamBAttacking = possessor?.team === "B";
-    if (!editMode && showVulnerability && (isTeamBAttacking || isTeamAAttacking)) {
-      const result = gameStateStore.getExploitabilityResult();
-      const cols = result.cells.length;
-      const rows = result.cells[0].length;
+    const vulnerability = analysis?.vulnerability;
+    if (!editMode && showVulnerability && (isTeamBAttacking || isTeamAAttacking) && vulnerability && analysis) {
+      const cols = analysis.cols;
+      const rows = analysis.rows;
       const cellW = 100 / cols;
       const cellH = 60 / rows;
-      const bx = state.ball.x;
-      const by = state.ball.y;
 
-      // Copy states for processing
-      const cellStates: string[][] = [];
       for (let c = 0; c < cols; c++) {
-        cellStates[c] = [];
-        for (let r = 0; r < rows; r++) {
-          cellStates[c][r] = result.cells[c][r].state;
-        }
-      }
-
-      // Step 1: Connected-Component Analysis (CCA) for noise reduction
-      const visited = Array.from({ length: cols }, () => new Uint8Array(rows));
-      for (let c = 0; c < cols; c++) {
-        for (let r = 0; r < rows; r++) {
-          if (cellStates[c][r] === "Exploitable" && !visited[c][r]) {
-            const component: [number, number][] = [];
-            const queue: [number, number][] = [[c, r]];
-            visited[c][r] = 1;
-
-            while (queue.length > 0) {
-              const curr = queue.shift()!;
-              component.push(curr);
-              const [cc, cr] = curr;
-
-              // Check 8-neighbors
-              for (let dc = -1; dc <= 1; dc++) {
-                for (let dr = -1; dr <= 1; dr++) {
-                  if (dc === 0 && dr === 0) continue;
-                  const nc = cc + dc;
-                  const nr = cr + dr;
-                  if (nc >= 0 && nc < cols && nr >= 0 && nr < rows) {
-                    if (cellStates[nc][nr] === "Exploitable" && !visited[nc][nr]) {
-                      visited[nc][nr] = 1;
-                      queue.push([nc, nr]);
-                    }
-                  }
-                }
-              }
-            }
-
-            // If component is smaller than MIN_EXPLOITABLE_REGION_SIZE (6), filter it to Useless
-            if (component.length < 6) {
-              component.forEach(([cc, cr]) => {
-                cellStates[cc][cr] = "Useless";
-              });
-            }
-          }
-        }
-      }
-
-      // Step 2: Ray-tracing forward along ball trajectory for Useless cells
-      const tracedStates = cellStates.map((col) => [...col]);
-      for (let c = 0; c < cols; c++) {
-        const cx = (c + 0.5) * cellW;
-        for (let r = 0; r < rows; r++) {
-          if (cellStates[c][r] === "Useless") {
-            const cellInfo = result.cells[c][r];
-            // If the defender can reach this cell before or at the same time as the attacker,
-            // then the pass is intercepted/recovered by the defender first. It is Defended!
-            if (cellInfo.defenderArrival <= cellInfo.attackerArrival) {
-              tracedStates[c][r] = "Defended";
-              continue;
-            }
-
-            const cy = (r + 0.5) * cellH;
-            const vx = cx - bx;
-            const vy = cy - by;
-            const dist = Math.hypot(vx, vy);
-            if (dist < 0.05) continue;
-
-            const dx = vx / dist;
-            const dy = vy / dist;
-
-            let inherited = "Useless";
-            // Trace forward along trajectory (away from the ball)
-            for (let s = 1; s <= 120; s++) {
-              const tx = cx + s * 1.0 * dx;
-              const ty = cy + s * 1.0 * dy;
-
-              if (tx < 0 || tx > 100 || ty < 0 || ty > 60) {
-                break;
-              }
-
-              const tc = Math.floor(tx / cellW);
-              const tr = Math.floor(ty / cellH);
-              if (tc >= 0 && tc < cols && tr >= 0 && tr < rows) {
-                const tState = cellStates[tc][tr];
-                if (tState !== "Useless") {
-                  inherited = tState;
-                  break;
-                }
-              }
-            }
-            tracedStates[c][r] = inherited;
-          }
-        }
-      }
-
-      // Step 3: Pruning via spatial rules & Draw cells
-      for (let c = 0; c < cols; c++) {
-        const cx = (c + 0.5) * cellW;
         const xStart = toScreenX(c * cellW);
         const xWidth = toScreenX((c + 1) * cellW) - xStart;
 
-        // Spatial Rules:
-        // For Team B attacking (right-to-left):
-        // Rule 1: ball in B's half (bx >= 50.0) -> render only in A's half (cx < 50.0)
-        // Rule 2: ball in A's half (33.33 <= bx < 50.0) -> render ahead of ball (cx < bx)
-        // Rule 3: ball in A's final third (bx < 33.33) -> render final third (cx < 33.33)
-        // For Team A attacking (left-to-right):
-        // Rule 1: ball in A's half (bx <= 50.0) -> render only in B's half (cx > 50.0)
-        // Rule 2: ball in B's half (50.0 < bx <= 66.67) -> render ahead of ball (cx > bx)
-        // Rule 3: ball in B's final third (bx > 66.67) -> render final third (cx > 66.67)
-        let passSpatial = false;
-        if (isTeamBAttacking) {
-          if (bx >= 50.0) {
-            if (cx < 50.0) passSpatial = true;
-          } else if (bx >= 33.33 && bx < 50.0) {
-            if (cx < bx) passSpatial = true;
-          } else {
-            if (cx < 33.33) passSpatial = true;
-          }
-        } else if (isTeamAAttacking) {
-          if (bx <= 50.0) {
-            if (cx > 50.0) passSpatial = true;
-          } else if (bx <= 66.67 && bx > 50.0) {
-            if (cx > bx) passSpatial = true;
-          } else {
-            if (cx > 66.67) passSpatial = true;
-          }
-        }
-
-        if (!passSpatial) continue;
-
         for (let r = 0; r < rows; r++) {
-          const finalState = tracedStates[c][r];
-          if (finalState === "Useless") continue;
+          const k = c * rows + r;
+          if (!vulnerability.visible[k]) continue;
+          const finalState = vulnerability.traced[k];
 
           const yStart = toScreenY((r + 1) * cellH);
           const yHeight = toScreenY(r * cellH) - yStart;
 
-          if (finalState === "Defended") {
+          if (finalState === CELL_DEFENDED) {
             ctx.fillStyle = "rgba(46, 204, 113, 0.7)"; // Green
-          } else if (finalState === "Contested") {
+          } else if (finalState === CELL_CONTESTED) {
             ctx.fillStyle = "rgba(52, 152, 219, 0.7)"; // Blue
-          } else if (finalState === "Exploitable") {
+          } else if (finalState === CELL_EXPLOITABLE) {
             ctx.fillStyle = "rgba(231, 76, 60, 0.7)"; // Strong Red
           } else {
             continue;
@@ -380,15 +272,15 @@ export function PitchCanvas() {
     const possessorForPass = state.players.find(p => p.id === state.ball.playerIdWhoHasPossession);
     const isTeamAAttackingForPass = possessorForPass?.team === "A";
     const isTeamBAttackingForPass = possessorForPass?.team === "B";
-    const shouldRenderPassing = !editMode && (
+    const shouldRenderPassing = !editMode && !!analysis?.passing && (
       (showPassingOptions && isTeamAAttackingForPass) ||
       (showOpponentPassingOptions && isTeamBAttackingForPass)
     );
 
-    if (shouldRenderPassing) {
-      const passResult = gameStateStore.getPassingAnalysisResult();
-      const cols = 80;
-      const rows = 48;
+    if (shouldRenderPassing && analysis?.passing) {
+      const passResult = analysis.passing;
+      const cols = analysis.cols;
+      const rows = analysis.rows;
       const cellW = 100 / cols;
       const cellH = 60 / rows;
 
@@ -400,7 +292,7 @@ export function PitchCanvas() {
         const player = state.players.find(p => p.id === opt.playerId);
 
         // Safe cells
-        opt.safeCells.forEach((c) => {
+        cellsOf(opt.safeCells, rows).forEach((c) => {
           const cellX = (c.col + 0.5) * cellW;
           const cellY = (c.row + 0.5) * cellH;
           const dist = player ? Math.hypot(cellX - player.x, cellY - player.y) : 0;
@@ -423,7 +315,7 @@ export function PitchCanvas() {
         });
 
         // Risky cells
-        opt.riskyCells.forEach((c) => {
+        cellsOf(opt.riskyCells, rows).forEach((c) => {
           const cellX = (c.col + 0.5) * cellW;
           const cellY = (c.row + 0.5) * cellH;
           const dist = player ? Math.hypot(cellX - player.x, cellY - player.y) : 0;
@@ -542,22 +434,22 @@ export function PitchCanvas() {
     const possessorForRuns = state.players.find(p => p.id === state.ball.playerIdWhoHasPossession);
     const isTeamAAttackingForRuns = possessorForRuns?.team === "A";
     const isTeamBAttackingForRuns = possessorForRuns?.team === "B";
-    const shouldRenderRuns = !editMode && (
+    const shouldRenderRuns = !editMode && !!analysis?.runs && (
       (showAvailableRuns && isTeamAAttackingForRuns) ||
       (showOpponentRuns && isTeamBAttackingForRuns)
     );
 
-    if (shouldRenderRuns) {
-      const runResult = gameStateStore.getRunningChannelsResult();
-      const cols = 80;
-      const rows = 48;
+    if (shouldRenderRuns && analysis?.runs) {
+      const runResult = analysis.runs;
+      const cols = analysis.cols;
+      const rows = analysis.rows;
       const cellW = 100 / cols;
       const cellH = 60 / rows;
 
       // Step A: Draw running channel cell fills (Green for Team A, Red for Team B)
       ctx.fillStyle = isTeamAAttackingForRuns ? "rgba(46, 204, 113, 0.7)" : "rgba(231, 76, 60, 0.7)";
       runResult.channels.forEach((chan) => {
-        chan.cells.forEach((c) => {
+        cellsOf(chan.cells, rows).forEach((c) => {
           const xStart = toScreenX(c.col * cellW);
           const xWidth = toScreenX((c.col + 1) * cellW) - xStart;
           const yStart = toScreenY((c.row + 1) * cellH);
@@ -619,15 +511,15 @@ export function PitchCanvas() {
     const possessorForOverload = state.players.find(p => p.id === state.ball.playerIdWhoHasPossession);
     const isTeamAAttackingForOverload = possessorForOverload?.team === "A";
     const isTeamBAttackingForOverload = possessorForOverload?.team === "B";
-    const shouldRenderOverloads = !editMode && (
+    const shouldRenderOverloads = !editMode && !!analysis?.overloads && (
       (showAttackingOverload && isTeamAAttackingForOverload) ||
       (showDefensiveOverload && isTeamBAttackingForOverload)
     );
 
-    if (shouldRenderOverloads) {
-      const overloadResult = gameStateStore.getOverloadAnalysisResult();
-      const cols = 80;
-      const rows = 48;
+    if (shouldRenderOverloads && analysis?.overloads) {
+      const overloadResult = analysis.overloads;
+      const cols = analysis.cols;
+      const rows = analysis.rows;
       const cellW = 100 / cols;
       const cellH = 60 / rows;
 
@@ -636,7 +528,7 @@ export function PitchCanvas() {
         let minX = Infinity, maxX = -Infinity;
         let minY = Infinity, maxY = -Infinity;
 
-        reg.cells.forEach((c) => {
+        cellsOf(reg.cells, rows).forEach((c) => {
           const cx = c.col * cellW;
           const cy = c.row * cellH;
           if (cx < minX) minX = cx;
@@ -1067,7 +959,7 @@ export function PitchCanvas() {
     }
 
     ctx.restore();
-  }, [dimensions, state, editMode, selectedPlayerId, showZoneOfInfluence, showVulnerability, showPassingOptions, showOpponentPassingOptions, showAvailableRuns, showOpponentRuns, showAttackingOverload, showDefensiveOverload]);
+  }, [dimensions, state, editMode, selectedPlayerId, showZoneOfInfluence, showVulnerability, showPassingOptions, showOpponentPassingOptions, showAvailableRuns, showOpponentRuns, showAttackingOverload, showDefensiveOverload, analysis]);
 
   // Pointer event handlers mapping screen space -> logical pitch space
   const handlePointerDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1206,6 +1098,27 @@ export function PitchCanvas() {
         onMouseLeave={handlePointerUp}
         style={{ display: "block", cursor: editMode ? "crosshair" : "default" }}
       />
+      {!editMode && (analysisStatus === "loading" || analysisStatus === "error") && (
+        <div
+          role="status"
+          data-testid="analysis-status"
+          title={analysisError ?? undefined}
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 12,
+            padding: "4px 10px",
+            borderRadius: 999,
+            fontSize: 12,
+            fontFamily: "sans-serif",
+            color: "#fff",
+            background: analysisStatus === "error" ? "rgba(231, 76, 60, 0.85)" : "rgba(0, 0, 0, 0.55)",
+            pointerEvents: "none",
+          }}
+        >
+          {analysisStatus === "error" ? "Analysis unavailable" : "Analysing…"}
+        </div>
+      )}
     </div>
   );
 }
