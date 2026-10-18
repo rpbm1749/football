@@ -11,7 +11,9 @@
     "dev:web": "npm run dev -w @football/web",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "bench": "npm run bench -w @football/engine"
+    "bench": "npm run bench -w @football/engine",
+    "bench:scaling": "npm run bench:scaling -w @football/compute",
+    "start:api": "npm start -w @football/api"
   },
   "engines": {
     "node": ">=22.18"
